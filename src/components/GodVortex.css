@@ -1,0 +1,160 @@
+.god-vortex-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    /* Create context but allow glow spills */
+}
+
+/* --- ANIMATIONS --- */
+
+@keyframes liquid-wobble {
+    0% {
+        border-radius: 50%;
+        transform: rotate(0deg) scale(1);
+    }
+
+    33% {
+        border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
+        transform: rotate(120deg) scale(1.1);
+    }
+
+    66% {
+        border-radius: 30% 60% 70% 40% / 50% 60% 30% 60%;
+        transform: rotate(240deg) scale(0.95);
+    }
+
+    100% {
+        border-radius: 50%;
+        transform: rotate(360deg) scale(1);
+    }
+}
+
+@keyframes spin-vortex {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-vortex-reverse {
+    from {
+        transform: rotate(360deg);
+    }
+
+    to {
+        transform: rotate(0deg);
+    }
+}
+
+@keyframes pulse-core {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px rgba(var(--vortex-rgb), 0.3);
+        border-color: rgba(var(--vortex-rgb), 0.5);
+    }
+
+    50% {
+        box-shadow: 0 0 20px rgba(var(--vortex-rgb), 0.7);
+        border-color: rgba(var(--vortex-rgb), 0.9);
+    }
+}
+
+.animate-liquid-wobble {
+    animation: liquid-wobble 8s ease-in-out infinite;
+}
+
+.animate-spin-vortex {
+    animation: spin-vortex var(--vortex-speed) linear infinite;
+}
+
+.animate-spin-vortex-reverse {
+    animation: spin-vortex-reverse calc(var(--vortex-speed) * 1.5) linear infinite;
+}
+
+.animate-pulse-core {
+    animation: pulse-core var(--pulse-speed) ease-in-out infinite;
+}
+
+/* Particles */
+.particle {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: rgb(var(--vortex-rgb));
+    border-radius: 50%;
+    box-shadow: 0 0 6px rgb(var(--vortex-rgb));
+    opacity: 0;
+}
+
+.p1 {
+    top: 50%;
+    left: 50%;
+    animation: particle-fly-1 3s ease-out infinite;
+}
+
+.p2 {
+    top: 50%;
+    left: 50%;
+    animation: particle-fly-2 4.2s ease-out infinite;
+    animation-delay: 1s;
+}
+
+.p3 {
+    top: 50%;
+    left: 50%;
+    animation: particle-fly-3 3.5s ease-out infinite;
+    animation-delay: 2s;
+}
+
+@keyframes particle-fly-1 {
+    0% {
+        transform: translate(-50%, -50%) rotate(0deg) translateX(0) scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(140deg) translateX(50px) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes particle-fly-2 {
+    0% {
+        transform: translate(-50%, -50%) rotate(120deg) translateX(0) scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(260deg) translateX(60px) scale(0);
+        opacity: 0;
+    }
+}
+
+@keyframes particle-fly-3 {
+    0% {
+        transform: translate(-50%, -50%) rotate(240deg) translateX(0) scale(0);
+        opacity: 0;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: translate(-50%, -50%) rotate(380deg) translateX(55px) scale(0);
+        opacity: 0;
+    }
+}

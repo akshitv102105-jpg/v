@@ -1,0 +1,1459 @@
+/**
+ * Risk Reward Animation CSS
+ * Egyptian Cave Theme - Hunter vs Glowing Tiger
+ * With Anxious Stickman reacting to risk
+ */
+
+/* ============================================================================
+   CONTAINER
+   ============================================================================ */
+
+.risk-reward-container {
+    width: 100%;
+    background: linear-gradient(180deg, #1E1C19 0%, #151310 100%);
+    border-radius: 16px;
+    border: 1px solid #3E3B36;
+    padding: 24px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+        inset 0 2px 20px rgba(0, 0, 0, 0.3),
+        0 4px 20px rgba(0, 0, 0, 0.4);
+}
+
+.cave-texture {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(214, 196, 160, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(214, 196, 160, 0.05) 0%, transparent 40%);
+}
+
+.animation-tracks {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ============================================================================
+   TRACK STYLING
+   ============================================================================ */
+
+.animation-track {
+    position: relative;
+    height: 100px;
+    width: 100%;
+    background: linear-gradient(180deg, rgba(42, 38, 34, 0.6) 0%, rgba(30, 28, 25, 0.8) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(74, 69, 62, 0.5);
+    overflow: visible;
+}
+
+.track-label {
+    position: absolute;
+    top: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    z-index: 5;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.track-label.profit {
+    left: 10px;
+    color: #D6C4A0;
+    background: rgba(214, 196, 160, 0.15);
+}
+
+.track-label.risk {
+    right: 10px;
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* ============================================================================
+   PROGRESS BAR
+   ============================================================================ */
+
+.track-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 8px;
+    background: rgba(214, 196, 160, 0.1);
+    width: 100%;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.track-progress-fill {
+    height: 100%;
+    transition: width 0.5s ease-out;
+    border-radius: 0 4px 4px 0;
+    position: relative;
+}
+
+.track-progress-fill.profit {
+    background: linear-gradient(90deg, #8B7355 0%, #D6C4A0 40%, #FFD700 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.track-progress-fill.profit::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+    animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.track-progress-fill.risk {
+    background: linear-gradient(90deg, #DC2626, #EF4444, #F87171);
+    position: absolute;
+    right: 0;
+    left: auto;
+    border-radius: 4px 0 0 4px;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+/* ============================================================================
+   TREASURE (GOAL)
+   ============================================================================ */
+
+.treasure-goal {
+    position: absolute;
+    right: 15px;
+    bottom: 20px;
+    height: 60px;
+    width: 60px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.treasure-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.5) 0%, transparent 70%);
+    animation: treasureGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes treasureGlow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.4);
+        opacity: 1;
+    }
+}
+
+.treasure-rays {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    animation: treasureRotate 8s linear infinite;
+}
+
+@keyframes treasureRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.treasure-ray {
+    position: absolute;
+    width: 2px;
+    height: 25px;
+    background: linear-gradient(to top, rgba(255, 215, 0, 0.8), transparent);
+    left: 50%;
+    top: -8px;
+    transform-origin: center 38px;
+}
+
+.treasure-ray:nth-child(1) {
+    transform: rotate(0deg);
+}
+
+.treasure-ray:nth-child(2) {
+    transform: rotate(45deg);
+}
+
+.treasure-ray:nth-child(3) {
+    transform: rotate(90deg);
+}
+
+.treasure-ray:nth-child(4) {
+    transform: rotate(135deg);
+}
+
+.treasure-ray:nth-child(5) {
+    transform: rotate(180deg);
+}
+
+.treasure-ray:nth-child(6) {
+    transform: rotate(225deg);
+}
+
+.treasure-ray:nth-child(7) {
+    transform: rotate(270deg);
+}
+
+.treasure-ray:nth-child(8) {
+    transform: rotate(315deg);
+}
+
+.treasure-icon {
+    position: relative;
+    z-index: 2;
+    font-size: 28px;
+    color: #FFD700;
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.5);
+    animation: treasureBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes treasureBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1.05);
+    }
+}
+
+.treasure-goal.captured .treasure-icon {
+    color: #10B981;
+}
+
+/* ============================================================================
+   HUNTER CHARACTER
+   ============================================================================ */
+
+.hunter-character {
+    position: absolute;
+    bottom: 12px;
+    height: 60px;
+    width: 60px;
+    z-index: 15;
+    transform: translateX(-50%);
+    transition: left 0.5s ease-out;
+}
+
+.hunter-body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.hunter-figure {
+    position: relative;
+}
+
+.hunter-icon {
+    font-size: 40px;
+    color: #D6C4A0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    animation: hunterRun 0.35s ease-in-out infinite;
+}
+
+@keyframes hunterRun {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+.hunter-character:not(.running) .hunter-icon {
+    animation: hunterIdle 2s ease-in-out infinite;
+}
+
+@keyframes hunterIdle {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.03);
+    }
+}
+
+.dust-trail {
+    position: absolute;
+    bottom: 5px;
+    left: -15px;
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+}
+
+.dust-cloud {
+    width: 8px;
+    height: 8px;
+    background: rgba(16, 185, 129, 0.6);
+    /* Green for profit */
+    border-radius: 50%;
+    animation: dustCloud 0.5s ease-out infinite;
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.4);
+}
+
+.dust-trail.red {
+    left: auto;
+    right: -20px;
+    flex-direction: row-reverse;
+}
+
+.dust-trail.red .dust-cloud {
+    background: rgba(239, 68, 68, 0.6);
+    /* Red for risk */
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+    animation: dustCloudRight 0.5s ease-out infinite;
+}
+
+.dust-cloud:nth-child(1) {
+    animation-delay: 0s;
+    opacity: 0.8;
+}
+
+.dust-cloud:nth-child(2) {
+    animation-delay: 0.1s;
+    width: 6px;
+    height: 6px;
+    opacity: 0.6;
+}
+
+.dust-cloud:nth-child(3) {
+    animation-delay: 0.2s;
+    width: 4px;
+    height: 4px;
+    opacity: 0.4;
+}
+
+@keyframes dustCloud {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(-20px) scale(0.2);
+        opacity: 0;
+    }
+}
+
+@keyframes dustCloudRight {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(20px) scale(0.2);
+        opacity: 0;
+    }
+}
+
+/* ============================================================================
+   ANXIOUS STICKMAN (Replaces Campfire)
+   ============================================================================ */
+
+.anxious-man {
+    position: absolute;
+    left: 15px;
+    bottom: 12px;
+    height: 70px;
+    width: 60px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.anxious-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* Stickman figure */
+.stickman {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+/* Head */
+.stickman-head {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #D6C4A0;
+    position: relative;
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+    animation: headLookAround 3s ease-in-out infinite;
+}
+
+@keyframes headLookAround {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-5deg);
+    }
+
+    75% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Eyes */
+.stickman-eyes {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+}
+
+.stickman-eye {
+    width: 4px;
+    height: 4px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+/* Eyebrow for worried expression */
+.stickman-eyebrows {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stickman-eyebrow {
+    width: 5px;
+    height: 2px;
+    background: #1a1a1a;
+    border-radius: 2px;
+}
+
+.stickman-eyebrow.left {
+    transform: rotate(15deg);
+}
+
+.stickman-eyebrow.right {
+    transform: rotate(-15deg);
+}
+
+/* Mouth */
+.stickman-mouth {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 2px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* Sweat drops */
+.sweat-drops {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.sweat-drop {
+    position: absolute;
+    width: 4px;
+    height: 6px;
+    background: #60A5FA;
+    border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+    opacity: 0;
+    animation: sweatDrop 1.5s ease-in infinite;
+}
+
+.sweat-drop:nth-child(1) {
+    right: -4px;
+    top: 8px;
+    animation-delay: 0s;
+}
+
+.sweat-drop:nth-child(2) {
+    left: -4px;
+    top: 10px;
+    animation-delay: 0.5s;
+}
+
+.sweat-drop:nth-child(3) {
+    right: -2px;
+    top: 4px;
+    animation-delay: 1s;
+}
+
+@keyframes sweatDrop {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* Body (neck + torso) */
+.stickman-body {
+    width: 3px;
+    height: 25px;
+    background: #D6C4A0;
+    margin-top: -2px;
+    transition: background 0.5s ease;
+}
+
+/* Arms */
+.stickman-arms {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    width: 34px;
+    justify-content: space-between;
+}
+
+.stickman-arm {
+    width: 3px;
+    height: 15px;
+    background: #D6C4A0;
+    border-radius: 2px;
+    transform-origin: top center;
+    transition: background 0.5s ease;
+}
+
+.stickman-arm.left {
+    transform: rotate(30deg);
+    animation: armShake 0.8s ease-in-out infinite alternate;
+}
+
+.stickman-arm.right {
+    transform: rotate(-30deg);
+    animation: armShake 0.8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes armShake {
+    0% {
+        transform: rotate(25deg);
+    }
+
+    100% {
+        transform: rotate(35deg);
+    }
+}
+
+/* Legs */
+.stickman-legs {
+    display: flex;
+    gap: 6px;
+    margin-top: -2px;
+}
+
+.stickman-leg {
+    width: 3px;
+    height: 18px;
+    background: #D6C4A0;
+    border-radius: 2px;
+    transition: background 0.5s ease;
+}
+
+.stickman-leg.left {
+    transform: rotate(10deg);
+}
+
+.stickman-leg.right {
+    transform: rotate(-10deg);
+}
+
+/* ============================================================================
+   ANXIETY LEVELS
+   ============================================================================ */
+
+/* Level 1: Mild concern (20-40%) */
+.anxious-man.level-1 .stickman-head {
+    animation: headLookAround 2s ease-in-out infinite;
+}
+
+.anxious-man.level-1 .stickman-eyebrows {
+    opacity: 0.5;
+}
+
+.anxious-man.level-1 .sweat-drop:nth-child(1) {
+    opacity: 1;
+    animation: sweatDrop 2s ease-in infinite;
+}
+
+/* Level 2: Worried (40-60%) */
+.anxious-man.level-2 .stickman-head {
+    background: #E5C9A0;
+    animation: headLookAround 1.5s ease-in-out infinite;
+}
+
+.anxious-man.level-2 .stickman-eyebrows {
+    opacity: 1;
+}
+
+.anxious-man.level-2 .stickman-mouth {
+    width: 8px;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+    background: #1a1a1a;
+}
+
+.anxious-man.level-2 .sweat-drop {
+    animation: sweatDrop 1.5s ease-in infinite;
+}
+
+.anxious-man.level-2 .sweat-drop:nth-child(1),
+.anxious-man.level-2 .sweat-drop:nth-child(2) {
+    opacity: 1;
+}
+
+.anxious-man.level-2 .stickman-arm.left {
+    animation: armShake 0.5s ease-in-out infinite alternate;
+}
+
+.anxious-man.level-2 .stickman-arm.right {
+    animation: armShake 0.5s ease-in-out infinite alternate-reverse;
+}
+
+/* Level 3: Anxious (60-80%) */
+.anxious-man.level-3 .stickman-head {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    animation: headLookAround 1s ease-in-out infinite, headShake 0.3s ease-in-out infinite;
+}
+
+@keyframes headShake {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-2px) rotate(-3deg);
+    }
+
+    75% {
+        transform: translateX(2px) rotate(3deg);
+    }
+}
+
+.anxious-man.level-3 .stickman-body,
+.anxious-man.level-3 .stickman-arm,
+.anxious-man.level-3 .stickman-leg {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+}
+
+.anxious-man.level-3 .stickman-eye {
+    width: 5px;
+    height: 5px;
+}
+
+.anxious-man.level-3 .stickman-mouth {
+    width: 10px;
+    height: 5px;
+    border-radius: 0 0 5px 5px;
+}
+
+.anxious-man.level-3 .sweat-drop {
+    animation: sweatDrop 1s ease-in infinite;
+}
+
+.anxious-man.level-3 .sweat-drop:nth-child(1),
+.anxious-man.level-3 .sweat-drop:nth-child(2),
+.anxious-man.level-3 .sweat-drop:nth-child(3) {
+    opacity: 1;
+}
+
+.anxious-man.level-3 .stickman {
+    animation: bodyTremble 0.2s ease-in-out infinite;
+}
+
+@keyframes bodyTremble {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(1px);
+    }
+}
+
+/* Level 4: Panic (80-100%) */
+.anxious-man.level-4 .stickman-head {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+    animation: headLookAround 0.5s ease-in-out infinite, headShake 0.15s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+.anxious-man.level-4 .stickman-body,
+.anxious-man.level-4 .stickman-arm,
+.anxious-man.level-4 .stickman-leg {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+}
+
+.anxious-man.level-4 .stickman-eye {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border: 1px solid #1a1a1a;
+}
+
+.anxious-man.level-4 .stickman-mouth {
+    width: 12px;
+    height: 8px;
+    border-radius: 0 0 6px 6px;
+    background: #1a1a1a;
+}
+
+.anxious-man.level-4 .sweat-drop {
+    width: 5px;
+    height: 8px;
+    animation: sweatDrop 0.6s ease-in infinite;
+}
+
+.anxious-man.level-4 .stickman {
+    animation: bodyTremble 0.1s ease-in-out infinite, panicJump 0.4s ease-in-out infinite;
+}
+
+@keyframes panicJump {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-3px);
+    }
+}
+
+.anxious-man.level-4 .stickman-arm.left {
+    animation: armPanic 0.2s ease-in-out infinite alternate;
+}
+
+.anxious-man.level-4 .stickman-arm.right {
+    animation: armPanic 0.2s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes armPanic {
+    0% {
+        transform: rotate(15deg);
+    }
+
+    100% {
+        transform: rotate(60deg);
+    }
+}
+
+.anxious-man.level-4 .stickman-leg.left {
+    animation: legPanic 0.3s ease-in-out infinite;
+}
+
+.anxious-man.level-4 .stickman-leg.right {
+    animation: legPanic 0.3s ease-in-out infinite reverse;
+}
+
+@keyframes legPanic {
+
+    0%,
+    100% {
+        transform: rotate(10deg);
+    }
+
+    50% {
+        transform: rotate(-5deg);
+    }
+}
+
+/* ============================================================================
+   TIGER CHARACTER - Actual Image with Burning Glow
+   ============================================================================ */
+
+.tiger-character {
+    position: absolute;
+    bottom: 5px;
+    height: 85px;
+    width: 85px;
+    z-index: 15;
+    transform: translateX(-50%);
+    transition: left 0.5s ease-out;
+}
+
+.tiger-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tiger-glow {
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(220, 38, 38, 0.4) 0%, rgba(185, 28, 28, 0.2) 40%, transparent 70%);
+    animation: tigerGlow 1.2s ease-in-out infinite;
+    left: -25%;
+    top: -25%;
+    pointer-events: none;
+}
+
+@keyframes tigerGlow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.15);
+        opacity: 0.8;
+    }
+}
+
+/* Tiger Image Wrapper */
+.tiger-image-wrapper {
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    animation: tigerProwl 1.5s ease-in-out infinite;
+}
+
+@keyframes tigerProwl {
+
+    0%,
+    100% {
+        transform: translateX(0) translateY(0);
+    }
+
+    25% {
+        transform: translateX(-2px) translateY(-1px);
+    }
+
+    75% {
+        transform: translateX(2px) translateY(-1px);
+    }
+}
+
+/* Tiger Image */
+.tiger-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter:
+        drop-shadow(0 0 10px rgba(220, 38, 38, 0.6)) drop-shadow(0 0 20px rgba(185, 28, 28, 0.4)) saturate(1.2) contrast(1.2) brightness(1.1);
+    animation: tigerBreathe 2s ease-in-out infinite;
+}
+
+@keyframes tigerBreathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.03);
+    }
+}
+
+/* Danger state - more intense glow */
+.tiger-character.danger .tiger-glow {
+    animation: tigerDanger 0.4s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.6) 0%, rgba(220, 38, 38, 0.3) 40%, transparent 70%);
+}
+
+@keyframes tigerDanger {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.3);
+        opacity: 1;
+    }
+}
+
+.tiger-character.danger .tiger-image-wrapper {
+    animation: tigerProwl 0.6s ease-in-out infinite;
+}
+
+.tiger-character.danger .tiger-img {
+    filter:
+        drop-shadow(0 0 15px rgba(239, 68, 68, 0.8)) drop-shadow(0 0 30px rgba(220, 38, 38, 0.6)) saturate(1.4) contrast(1.3) brightness(1.2) hue-rotate(-5deg);
+    animation: tigerBreathe 1s ease-in-out infinite;
+}
+
+/* Roar warning */
+.roar-warning {
+    position: absolute;
+    top: -5px;
+    right: 5px;
+    display: none;
+    z-index: 20;
+}
+
+.roar-warning.active {
+    display: block;
+}
+
+.roar-exclamation {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 22px;
+    height: 22px;
+    background: #EF4444;
+    border-radius: 50%;
+    color: white;
+    font-weight: 700;
+    font-size: 13px;
+    animation: roarBounce 0.25s ease-in-out infinite;
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.8);
+}
+
+@keyframes roarBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-3px) scale(1.1);
+    }
+}
+
+/* ============================================================================
+   STATS OVERLAY
+   ============================================================================ */
+
+.animation-stats {
+    display: flex;
+    justify-content: space-between;
+    padding-top: 16px;
+    border-top: 1px solid rgba(62, 59, 54, 0.5);
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.stat-item {
+    text-align: center;
+    flex: 1;
+    min-width: 70px;
+}
+
+.stat-label {
+    font-size: 9px;
+    font-weight: 700;
+    color: rgba(107, 103, 95, 0.8);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-size: 16px;
+    font-weight: 700;
+    font-family: 'JetBrains Mono', monospace;
+    transition: color 0.3s ease;
+}
+
+.stat-value.profit {
+    color: #D6C4A0;
+}
+
+.stat-value.risk {
+    color: #EF4444;
+}
+
+.stat-value.neutral {
+    color: #94A3B8;
+}
+
+.stat-value.text-green,
+.stat-value.profit.text-green {
+    color: #10B981 !important;
+    text-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+}
+
+.stat-value.text-red,
+.stat-value.profit.text-red {
+    color: #EF4444 !important;
+}
+
+.stat-value.text-warning,
+.stat-value.risk.text-warning {
+    color: #F59E0B !important;
+    animation: warningPulse 0.6s ease-in-out infinite;
+}
+
+@keyframes warningPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.6;
+    }
+}
+
+/* ============================================================================
+   RESPONSIVE
+   ============================================================================ */
+
+@media (max-width: 768px) {
+    .risk-reward-container {
+        padding: 16px;
+    }
+
+    .animation-track {
+        height: 85px;
+    }
+
+    .hunter-character {
+        height: 50px;
+        width: 50px;
+    }
+
+    .hunter-icon {
+        font-size: 32px;
+    }
+
+    .tiger-character {
+        height: 65px;
+        width: 65px;
+    }
+
+    .tiger-head {
+        width: 45px;
+        height: 38px;
+    }
+
+    .treasure-goal {
+        height: 45px;
+        width: 45px;
+    }
+
+    .treasure-icon {
+        font-size: 22px;
+    }
+
+    .stat-value {
+        font-size: 14px;
+    }
+
+    .anxious-man {
+        height: 60px;
+        width: 50px;
+    }
+
+    .stickman-head {
+        width: 18px;
+        height: 18px;
+    }
+
+    .stickman-body {
+        height: 20px;
+    }
+}
+
+/* ============================================================================
+   VICTORY STATE - Hunter catches the diamond
+   ============================================================================ */
+
+/* Hunter holds trophy above head */
+.hunter-character.victory {
+    animation: none;
+}
+
+.hunter-character.victory .hunter-icon {
+    animation: victoryBounce 0.5s ease-out;
+    color: #FFD700;
+    text-shadow: 0 0 15px rgba(255, 215, 0, 0.6);
+}
+
+@keyframes victoryBounce {
+    0% {
+        transform: scale(1);
+    }
+
+    30% {
+        transform: scale(1.3) translateY(-10px);
+    }
+
+    100% {
+        transform: scale(1.1);
+    }
+}
+
+/* Trophy diamond above hunter's head */
+.hunter-trophy {
+    position: absolute;
+    top: -25px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 22px;
+    color: #FFD700;
+    opacity: 0;
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.5);
+    z-index: 30;
+}
+
+@keyframes trophyAppear {
+    0% {
+        opacity: 0;
+        transform: translateX(-50%) translateY(20px) scale(0);
+    }
+
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(-5px) scale(1.3);
+    }
+
+    100% {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+.hunter-character.victory .hunter-trophy {
+    animation: trophyAppear 0.5s ease-out forwards, trophyFloat 1s ease-in-out 0.5s infinite;
+}
+
+@keyframes trophyFloat {
+
+    0%,
+    100% {
+        transform: translateX(-50%) translateY(0);
+    }
+
+    50% {
+        transform: translateX(-50%) translateY(-5px);
+    }
+}
+
+/* Victory celebration particles */
+.victory-sparkles {
+    position: absolute;
+    top: -30px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 60px;
+    height: 60px;
+    pointer-events: none;
+    opacity: 0;
+}
+
+.hunter-character.victory .victory-sparkles {
+    opacity: 1;
+}
+
+.victory-sparkle {
+    position: absolute;
+    width: 6px;
+    height: 6px;
+    background: #FFD700;
+    border-radius: 50%;
+    animation: sparkleExplode 1s ease-out infinite;
+}
+
+.victory-sparkle:nth-child(1) {
+    left: 50%;
+    top: 50%;
+    animation-delay: 0s;
+}
+
+.victory-sparkle:nth-child(2) {
+    left: 30%;
+    top: 30%;
+    animation-delay: 0.1s;
+}
+
+.victory-sparkle:nth-child(3) {
+    left: 70%;
+    top: 30%;
+    animation-delay: 0.2s;
+}
+
+.victory-sparkle:nth-child(4) {
+    left: 20%;
+    top: 50%;
+    animation-delay: 0.3s;
+}
+
+.victory-sparkle:nth-child(5) {
+    left: 80%;
+    top: 50%;
+    animation-delay: 0.4s;
+}
+
+@keyframes sparkleExplode {
+    0% {
+        transform: scale(0) translate(0, 0);
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 1;
+    }
+
+    100% {
+        transform: scale(1) translate(var(--x, 10px), var(--y, -20px));
+        opacity: 0;
+    }
+}
+
+.victory-sparkle:nth-child(1) {
+    --x: 0px;
+    --y: -25px;
+}
+
+.victory-sparkle:nth-child(2) {
+    --x: -20px;
+    --y: -15px;
+}
+
+.victory-sparkle:nth-child(3) {
+    --x: 20px;
+    --y: -15px;
+}
+
+.victory-sparkle:nth-child(4) {
+    --x: -25px;
+    --y: 5px;
+}
+
+.victory-sparkle:nth-child(5) {
+    --x: 25px;
+    --y: 5px;
+}
+
+/* Hide treasure when captured */
+.treasure-goal.captured {
+    animation: treasureCaptured 0.5s ease-out forwards;
+}
+
+@keyframes treasureCaptured {
+    0% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(1.2);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0);
+    }
+}
+
+/* ============================================================================
+   EATEN STATE - Tiger catches the anxious stickman
+   ============================================================================ */
+
+/* Stickman gets eaten */
+.anxious-man.eaten {
+    animation: getEaten 1s ease-out forwards;
+}
+
+@keyframes getEaten {
+    0% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+
+    20% {
+        transform: scale(1.1) rotate(-10deg);
+    }
+
+    40% {
+        transform: scale(0.8) rotate(15deg) translateX(10px);
+    }
+
+    60% {
+        opacity: 0.7;
+        transform: scale(0.5) rotate(-20deg) translateX(20px);
+    }
+
+    80% {
+        opacity: 0.3;
+        transform: scale(0.2) rotate(30deg) translateX(30px);
+    }
+
+    100% {
+        opacity: 0;
+        transform: scale(0) rotate(45deg) translateX(40px);
+    }
+}
+
+/* Skull icon appears where stickman was */
+.skull-icon {
+    position: absolute;
+    left: 15px;
+    bottom: 25px;
+    font-size: 30px;
+    color: #EF4444;
+    opacity: 0;
+    z-index: 25;
+    text-shadow: 0 0 10px rgba(239, 68, 68, 0.6);
+    display: none;
+}
+
+.skull-icon.visible {
+    display: block;
+    animation: skullAppear 0.5s ease-out 0.8s forwards;
+}
+
+@keyframes skullAppear {
+    0% {
+        opacity: 0;
+        transform: scale(0) rotate(-180deg);
+    }
+
+    50% {
+        transform: scale(1.3) rotate(10deg);
+    }
+
+    100% {
+        opacity: 1;
+        transform: scale(1) rotate(0deg);
+    }
+}
+
+/* Tiger victory roar animation */
+.tiger-character.victory-roar .tiger-img {
+    animation: tigerRoar 0.3s ease-in-out 3;
+    filter:
+        drop-shadow(0 0 25px rgba(239, 68, 68, 1)) drop-shadow(0 0 50px rgba(220, 38, 38, 0.8)) saturate(1.8) contrast(1.4) brightness(1.3) hue-rotate(-10deg);
+}
+
+@keyframes tigerRoar {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.15) rotate(5deg);
+    }
+}
+
+.tiger-character.victory-roar .tiger-glow {
+    animation: victoryGlow 0.4s ease-in-out infinite;
+    background: radial-gradient(circle, rgba(239, 68, 68, 0.8) 0%, rgba(220, 38, 38, 0.4) 40%, transparent 70%);
+}
+
+@keyframes victoryGlow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.8;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 1;
+    }
+}

@@ -1,0 +1,1072 @@
+/**
+ * Risk Reward Animation CSS
+ * Egyptian Cave Theme - Hunter vs Glowing Tiger
+ * With Anxious Stickman reacting to risk
+ */
+
+/* ============================================================================
+   CONTAINER
+   ============================================================================ */
+
+.risk-reward-container {
+    width: 100%;
+    background: linear-gradient(180deg, #1E1C19 0%, #151310 100%);
+    border-radius: 16px;
+    border: 1px solid #3E3B36;
+    padding: 24px;
+    margin-bottom: 24px;
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+        inset 0 2px 20px rgba(0, 0, 0, 0.3),
+        0 4px 20px rgba(0, 0, 0, 0.4);
+    min-height: 250px;
+    /* Ensure height if empty */
+}
+
+.cave-texture {
+    position: absolute;
+    inset: 0;
+    opacity: 0.08;
+    pointer-events: none;
+    background-image:
+        radial-gradient(circle at 20% 30%, rgba(214, 196, 160, 0.1) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(214, 196, 160, 0.05) 0%, transparent 40%);
+}
+
+.animation-tracks {
+    position: relative;
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ============================================================================
+   TRACK STYLING
+   ============================================================================ */
+
+.animation-track {
+    position: relative;
+    height: 100px;
+    width: 100%;
+    background: linear-gradient(180deg, rgba(42, 38, 34, 0.6) 0%, rgba(30, 28, 25, 0.8) 100%);
+    border-radius: 12px;
+    border: 1px solid rgba(74, 69, 62, 0.5);
+    overflow: visible;
+}
+
+.track-label {
+    position: absolute;
+    top: 8px;
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    z-index: 5;
+    padding: 4px 10px;
+    border-radius: 4px;
+}
+
+.track-label.profit {
+    left: 10px;
+    color: #D6C4A0;
+    background: rgba(214, 196, 160, 0.15);
+}
+
+.track-label.risk {
+    right: 10px;
+    color: #EF4444;
+    background: rgba(239, 68, 68, 0.15);
+}
+
+/* ============================================================================
+   PROGRESS BAR
+   ============================================================================ */
+
+.track-progress {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 8px;
+    background: rgba(214, 196, 160, 0.1);
+    width: 100%;
+    border-radius: 0 0 12px 12px;
+    overflow: hidden;
+}
+
+.track-progress-fill {
+    height: 100%;
+    transition: width 0.5s ease-out;
+    border-radius: 0 4px 4px 0;
+    position: relative;
+}
+
+.track-progress-fill.profit {
+    background: linear-gradient(90deg, #8B7355 0%, #D6C4A0 40%, #FFD700 100%);
+    box-shadow: 0 0 15px rgba(255, 215, 0, 0.5);
+}
+
+.track-progress-fill.profit::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.3) 50%, transparent 100%);
+    animation: progressShine 2s ease-in-out infinite;
+}
+
+@keyframes progressShine {
+    0% {
+        transform: translateX(-100%);
+    }
+
+    100% {
+        transform: translateX(100%);
+    }
+}
+
+.track-progress-fill.risk {
+    background: linear-gradient(90deg, #DC2626, #EF4444, #F87171);
+    position: absolute;
+    right: 0;
+    left: auto;
+    border-radius: 4px 0 0 4px;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+/* ============================================================================
+   TREASURE (GOAL)
+   ============================================================================ */
+
+.treasure-goal {
+    position: absolute;
+    right: 15px;
+    bottom: 20px;
+    height: 60px;
+    width: 60px;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.treasure-glow {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 215, 0, 0.5) 0%, transparent 70%);
+    animation: treasureGlow 1.5s ease-in-out infinite;
+}
+
+@keyframes treasureGlow {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.4);
+        opacity: 1;
+    }
+}
+
+.treasure-rays {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    animation: treasureRotate 8s linear infinite;
+}
+
+@keyframes treasureRotate {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.treasure-ray {
+    position: absolute;
+    width: 2px;
+    height: 25px;
+    background: linear-gradient(to top, rgba(255, 215, 0, 0.8), transparent);
+    left: 50%;
+    top: -8px;
+    transform-origin: center 38px;
+}
+
+.treasure-ray:nth-child(1) {
+    transform: rotate(0deg);
+}
+
+.treasure-ray:nth-child(2) {
+    transform: rotate(45deg);
+}
+
+.treasure-ray:nth-child(3) {
+    transform: rotate(90deg);
+}
+
+.treasure-ray:nth-child(4) {
+    transform: rotate(135deg);
+}
+
+.treasure-ray:nth-child(5) {
+    transform: rotate(180deg);
+}
+
+.treasure-ray:nth-child(6) {
+    transform: rotate(225deg);
+}
+
+.treasure-ray:nth-child(7) {
+    transform: rotate(270deg);
+}
+
+.treasure-ray:nth-child(8) {
+    transform: rotate(315deg);
+}
+
+.treasure-icon {
+    position: relative;
+    z-index: 2;
+    font-size: 28px;
+    color: #FFD700;
+    text-shadow:
+        0 0 10px rgba(255, 215, 0, 0.8),
+        0 0 20px rgba(255, 215, 0, 0.5);
+    animation: treasureBounce 1.2s ease-in-out infinite;
+}
+
+@keyframes treasureBounce {
+
+    0%,
+    100% {
+        transform: translateY(0) scale(1);
+    }
+
+    50% {
+        transform: translateY(-4px) scale(1.05);
+    }
+}
+
+.treasure-goal.captured .treasure-icon {
+    color: #10B981;
+}
+
+/* ============================================================================
+   HUNTER CHARACTER
+   ============================================================================ */
+
+.hunter-character {
+    position: absolute;
+    bottom: 12px;
+    height: 60px;
+    width: 60px;
+    z-index: 15;
+    transform: translateX(-50%);
+    transition: left 0.5s ease-out;
+}
+
+.hunter-body {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.hunter-figure {
+    position: relative;
+}
+
+.hunter-icon {
+    font-size: 40px;
+    color: #D6C4A0;
+    text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+    animation: hunterRun 0.35s ease-in-out infinite;
+}
+
+@keyframes hunterRun {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-6px);
+    }
+}
+
+.hunter-character:not(.running) .hunter-icon {
+    animation: hunterIdle 2s ease-in-out infinite;
+}
+
+@keyframes hunterIdle {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.03);
+    }
+}
+
+.dust-trail {
+    position: absolute;
+    bottom: 5px;
+    left: -15px;
+    display: flex;
+    gap: 3px;
+    align-items: flex-end;
+}
+
+.dust-cloud {
+    width: 8px;
+    height: 8px;
+    background: rgba(16, 185, 129, 0.6);
+    /* Green for profit */
+    border-radius: 50%;
+    animation: dustCloud 0.5s ease-out infinite;
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.4);
+}
+
+.dust-trail.red {
+    left: auto;
+    right: -20px;
+    flex-direction: row-reverse;
+}
+
+.dust-trail.red .dust-cloud {
+    background: rgba(239, 68, 68, 0.6);
+    /* Red for risk */
+    box-shadow: 0 0 5px rgba(239, 68, 68, 0.4);
+    animation: dustCloudRight 0.5s ease-out infinite;
+}
+
+.dust-cloud:nth-child(1) {
+    animation-delay: 0s;
+    opacity: 0.8;
+}
+
+.dust-cloud:nth-child(2) {
+    animation-delay: 0.1s;
+    width: 6px;
+    height: 6px;
+    opacity: 0.6;
+}
+
+.dust-cloud:nth-child(3) {
+    animation-delay: 0.2s;
+    width: 4px;
+    height: 4px;
+    opacity: 0.4;
+}
+
+@keyframes dustCloud {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(-20px) scale(0.2);
+        opacity: 0;
+    }
+}
+
+@keyframes dustCloudRight {
+    0% {
+        transform: translateX(0) scale(1);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: translateX(20px) scale(0.2);
+        opacity: 0;
+    }
+}
+
+/* ============================================================================
+   ANXIOUS STICKMAN (Replaces Campfire)
+   ============================================================================ */
+
+.anxious-man {
+    position: absolute;
+    left: 15px;
+    bottom: 12px;
+    height: 70px;
+    width: 60px;
+    z-index: 10;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+.anxious-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+
+/* Stickman figure */
+.stickman {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    transition: all 0.3s ease;
+}
+
+/* Head */
+.stickman-head {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    background: #D6C4A0;
+    position: relative;
+    transition: background 0.5s ease, box-shadow 0.5s ease;
+    animation: headLookAround 3s ease-in-out infinite;
+}
+
+@keyframes headLookAround {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-5deg);
+    }
+
+    75% {
+        transform: rotate(5deg);
+    }
+}
+
+/* Eyes */
+.stickman-eyes {
+    position: absolute;
+    top: 7px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 5px;
+}
+
+.stickman-eye {
+    width: 4px;
+    height: 4px;
+    background: #1a1a1a;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+/* Eyebrow for worried expression */
+.stickman-eyebrows {
+    position: absolute;
+    top: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 6px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.stickman-eyebrow {
+    width: 5px;
+    height: 2px;
+    background: #1a1a1a;
+    border-radius: 2px;
+}
+
+.stickman-eyebrow.left {
+    transform: rotate(15deg);
+}
+
+.stickman-eyebrow.right {
+    transform: rotate(-15deg);
+}
+
+/* Mouth */
+.stickman-mouth {
+    position: absolute;
+    bottom: 4px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 6px;
+    height: 2px;
+    background: #1a1a1a;
+    border-radius: 2px;
+    transition: all 0.3s ease;
+}
+
+/* Sweat drops */
+.sweat-drops {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.sweat-drop {
+    position: absolute;
+    width: 4px;
+    height: 6px;
+    background: #60A5FA;
+    border-radius: 50% 50% 50% 50% / 30% 30% 70% 70%;
+    opacity: 0;
+    animation: sweatDrop 1.5s ease-in infinite;
+}
+
+.sweat-drop:nth-child(1) {
+    right: -4px;
+    top: 8px;
+    animation-delay: 0s;
+}
+
+.sweat-drop:nth-child(2) {
+    left: -4px;
+    top: 10px;
+    animation-delay: 0.5s;
+}
+
+.sweat-drop:nth-child(3) {
+    right: -2px;
+    top: 4px;
+    animation-delay: 1s;
+}
+
+@keyframes sweatDrop {
+    0% {
+        opacity: 0;
+        transform: translateY(0);
+    }
+
+    20% {
+        opacity: 1;
+    }
+
+    100% {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+}
+
+/* Body (neck + torso) */
+.stickman-body {
+    width: 3px;
+    height: 25px;
+    background: #D6C4A0;
+    margin-top: -2px;
+    transition: background 0.5s ease;
+}
+
+/* Arms */
+.stickman-arms {
+    position: absolute;
+    top: 26px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    width: 34px;
+    justify-content: space-between;
+}
+
+.stickman-arm {
+    width: 3px;
+    height: 15px;
+    background: #D6C4A0;
+    border-radius: 2px;
+    transform-origin: top center;
+    transition: background 0.5s ease;
+}
+
+.stickman-arm.left {
+    transform: rotate(30deg);
+    animation: armShake 0.8s ease-in-out infinite alternate;
+}
+
+.stickman-arm.right {
+    transform: rotate(-30deg);
+    animation: armShake 0.8s ease-in-out infinite alternate-reverse;
+}
+
+@keyframes armShake {
+    0% {
+        transform: rotate(25deg);
+    }
+
+    100% {
+        transform: rotate(35deg);
+    }
+}
+
+/* Legs */
+.stickman-legs {
+    display: flex;
+    gap: 6px;
+    margin-top: -2px;
+}
+
+.stickman-leg {
+    width: 3px;
+    height: 18px;
+    background: #D6C4A0;
+    border-radius: 2px;
+    transition: background 0.5s ease;
+}
+
+.stickman-leg.left {
+    transform: rotate(10deg);
+}
+
+.stickman-leg.right {
+    transform: rotate(-10deg);
+}
+
+/* ============================================================================
+   ANXIETY LEVELS
+   ============================================================================ */
+
+/* Level 1: Mild concern (20-40%) */
+.anxious-man.level-1 .stickman-head {
+    animation: headLookAround 2s ease-in-out infinite;
+}
+
+.anxious-man.level-1 .stickman-eyebrows {
+    opacity: 0.5;
+}
+
+.anxious-man.level-1 .sweat-drop:nth-child(1) {
+    opacity: 1;
+    animation: sweatDrop 2s ease-in infinite;
+}
+
+/* Level 2: Worried (40-60%) */
+.anxious-man.level-2 .stickman-head {
+    background: #E5C9A0;
+    animation: headLookAround 1.5s ease-in-out infinite;
+}
+
+.anxious-man.level-2 .stickman-eyebrows {
+    opacity: 1;
+}
+
+.anxious-man.level-2 .stickman-mouth {
+    width: 8px;
+    height: 3px;
+    border-radius: 0 0 4px 4px;
+    background: #1a1a1a;
+}
+
+.anxious-man.level-2 .sweat-drop {
+    animation: sweatDrop 1.5s ease-in infinite;
+}
+
+.anxious-man.level-2 .sweat-drop:nth-child(1),
+.anxious-man.level-2 .sweat-drop:nth-child(2) {
+    opacity: 1;
+}
+
+.anxious-man.level-2 .stickman-arm.left {
+    animation: armShake 0.5s ease-in-out infinite alternate;
+}
+
+.anxious-man.level-2 .stickman-arm.right {
+    animation: armShake 0.5s ease-in-out infinite alternate-reverse;
+}
+
+/* Level 3: Anxious (60-80%) */
+.anxious-man.level-3 .stickman-head {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+    animation: headLookAround 1s ease-in-out infinite, headShake 0.3s ease-in-out infinite;
+}
+
+@keyframes headShake {
+
+    0%,
+    100% {
+        transform: translateX(0) rotate(0deg);
+    }
+
+    25% {
+        transform: translateX(-2px) rotate(-3deg);
+    }
+
+    75% {
+        transform: translateX(2px) rotate(3deg);
+    }
+}
+
+.anxious-man.level-3 .stickman-body,
+.anxious-man.level-3 .stickman-arm,
+.anxious-man.level-3 .stickman-leg {
+    background: linear-gradient(180deg, #F59E0B 0%, #D97706 100%);
+}
+
+.anxious-man.level-3 .stickman-eye {
+    width: 5px;
+    height: 5px;
+}
+
+.anxious-man.level-3 .stickman-mouth {
+    width: 10px;
+    height: 5px;
+    border-radius: 0 0 5px 5px;
+}
+
+.anxious-man.level-3 .sweat-drop {
+    animation: sweatDrop 1s ease-in infinite;
+}
+
+.anxious-man.level-3 .sweat-drop:nth-child(1),
+.anxious-man.level-3 .sweat-drop:nth-child(2),
+.anxious-man.level-3 .sweat-drop:nth-child(3) {
+    opacity: 1;
+}
+
+.anxious-man.level-3 .stickman {
+    animation: bodyTremble 0.2s ease-in-out infinite;
+}
+
+@keyframes bodyTremble {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    50% {
+        transform: translateX(1px);
+    }
+}
+
+/* Level 4: Panic (80-100%) */
+.anxious-man.level-4 .stickman-head {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+    animation: headLookAround 0.5s ease-in-out infinite, headShake 0.15s ease-in-out infinite;
+    box-shadow: 0 0 15px rgba(239, 68, 68, 0.5);
+}
+
+.anxious-man.level-4 .stickman-body,
+.anxious-man.level-4 .stickman-arm,
+.anxious-man.level-4 .stickman-leg {
+    background: linear-gradient(180deg, #EF4444 0%, #DC2626 100%);
+}
+
+.anxious-man.level-4 .stickman-eye {
+    width: 6px;
+    height: 6px;
+    background: white;
+    border: 1px solid #1a1a1a;
+}
+
+.anxious-man.level-4 .stickman-mouth {
+    width: 12px;
+    height: 8px;
+    border-radius: 0 0 6px 6px;
+    background: #1a1a1a;
+}
+
+.anxious-man.level-4 .sweat-drop {
+    width: 5px;
+    height: 8px;
+    animation: sweatDrop 0.6s ease-in infinite;
+}
+
+.anxious-man.level-4 .stickman {
+    animation: bodyTremble 0.1s ease-in-out infinite, panicJump 0.4s ease-in-out infinite;
+}
+
+@keyframes panicJump {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-2px);
+    }
+}
+
+/* Eaten State */
+.anxious-man.eaten .stickman {
+    display: none;
+}
+
+/* Skull Icon */
+.skull-icon {
+    position: absolute;
+    left: 30px;
+    bottom: 25px;
+    font-size: 30px;
+    color: #e2e8f0;
+    opacity: 0;
+    transform: scale(0.5);
+    transition: all 0.3s ease;
+    z-index: 12;
+}
+
+.skull-icon.visible {
+    opacity: 1;
+    transform: scale(1);
+}
+
+/* ============================================================================
+   TIGER CHARACTER
+   ============================================================================ */
+
+.tiger-character {
+    position: absolute;
+    bottom: 15px;
+    height: 60px;
+    width: 100px;
+    z-index: 20;
+    transform: translateX(-50%);
+    transition: left 0.5s ease-out;
+}
+
+.tiger-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.tiger-image-wrapper {
+    position: relative;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2;
+}
+
+.tiger-img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(255, 69, 0, 0.5));
+    animation: tigerBreathe 2s ease-in-out infinite;
+}
+
+@keyframes tigerBreathe {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.05);
+    }
+}
+
+.tiger-glow {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    background: radial-gradient(circle, rgba(255, 69, 0, 0.4) 0%, transparent 70%);
+    border-radius: 50%;
+    z-index: 1;
+    animation: pulseRed 2s infinite;
+}
+
+@keyframes pulseRed {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scale(1.5);
+        opacity: 0.8;
+    }
+}
+
+/* Danger State (Tiger getting close) */
+.tiger-character.danger .tiger-glow {
+    background: radial-gradient(circle, rgba(255, 0, 0, 0.6) 0%, transparent 70%);
+    animation: pulseRedFast 0.5s infinite;
+}
+
+.tiger-character.danger .tiger-img {
+    animation: tigerShake 0.2s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px rgba(255, 0, 0, 0.8));
+}
+
+@keyframes pulseRedFast {
+
+    0%,
+    100% {
+        transform: scale(1.2);
+        opacity: 0.6;
+    }
+
+    50% {
+        transform: scale(1.6);
+        opacity: 0.9;
+    }
+}
+
+@keyframes tigerShake {
+
+    0%,
+    100% {
+        transform: rotate(0deg);
+    }
+
+    25% {
+        transform: rotate(-3deg);
+    }
+
+    75% {
+        transform: rotate(3deg);
+    }
+}
+
+/* Victory Roar (Eaten) */
+.tiger-character.victory-roar .tiger-img {
+    transform: scale(1.4);
+    animation: tigerRoar 1s ease-in-out infinite;
+    filter: drop-shadow(0 0 15px rgba(255, 0, 0, 1));
+}
+
+@keyframes tigerRoar {
+
+    0%,
+    100% {
+        transform: scale(1.4) translateY(0);
+    }
+
+    50% {
+        transform: scale(1.5) translateY(-5px);
+    }
+}
+
+.roar-warning {
+    position: absolute;
+    top: -20px;
+    right: 0;
+    background: #EF4444;
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 16px;
+    opacity: 0;
+    transform: scale(0);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 20;
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+}
+
+.roar-warning.active {
+    opacity: 1;
+    transform: scale(1);
+    animation: warningPulse 0.5s infinite;
+}
+
+@keyframes warningPulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+/* ============================================================================
+   STATS
+   ============================================================================ */
+
+.animation-stats {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid rgba(74, 69, 62, 0.5);
+}
+
+.stat-item {
+    text-align: center;
+}
+
+.stat-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    color: #94A3B8;
+    margin-bottom: 4px;
+}
+
+.stat-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+}
+
+.stat-value.profit.text-green {
+    color: #10B981;
+}
+
+.stat-value.profit.text-red {
+    color: #EF4444;
+}
+
+.stat-value.risk {
+    color: #EF4444;
+}
+
+.stat-value.risk.text-warning {
+    color: #F87171;
+    animation: textFlash 1s infinite;
+}
+
+@keyframes textFlash {
+
+    0%,
+    100% {
+        opacity: 1;
+    }
+
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.stat-value.neutral {
+    color: #CBD5E1;
+}

@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="VYUHA Guruji - AI Trading Mentor powered by advanced language models">
+    <title>VYUHA - Guruji AI Mentor</title>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+        rel="stylesheet">
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
+        integrity="sha512-z3gLpd7yknf1YoNbCzqRKc4qyor8gaKU1qmn+CShxbuBusANI9QpRohGBreCFkKxLhei6S9CQXFEbbKuqLg0DA=="
+        crossorigin="anonymous" referrerpolicy="no-referrer" />
+
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="guruji.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">VYUHA</div>
+            <nav class="nav">
+                <a href="index.html" class="nav-link">DASHBOARD</a>
+                <a href="analytics.html" class="nav-link">ANALYTICS</a>
+                <a href="journal.html" class="nav-link">JOURNAL</a>
+                <a href="playbook.html" class="nav-link">PLAYBOOK</a>
+                <a href="guruji.html" class="nav-link active">GURUJI</a>
+                <a href="goals.html" class="nav-link">PROFILE</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="guruji-container">
+        <!-- Sidebar with suggested prompts -->
+        <aside class="guruji-sidebar">
+            <div class="sidebar-header">
+                <div class="guruji-avatar">
+                    <i class="fa-solid fa-om"></i>
+                </div>
+                <h2>Guruji</h2>
+                <p class="sidebar-subtitle">Your AI Trading Mentor</p>
+            </div>
+
+            <div class="quick-prompts">
+                <h3 class="prompts-title">Quick Analysis</h3>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Analyze my recent trading performance. What patterns do you see in my wins and losses?')">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Full Performance Review</span>
+                </button>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Which of my trading strategies is performing best? Should I focus more on any particular one?')">
+                    <i class="fa-solid fa-bullseye"></i>
+                    <span>Strategy Analysis</span>
+                </button>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Based on my trading data, what are my biggest weaknesses and how can I improve?')">
+                    <i class="fa-solid fa-triangle-exclamation"></i>
+                    <span>Find My Weaknesses</span>
+                </button>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Looking at my day-of-week performance, which days should I trade more or less?')">
+                    <i class="fa-solid fa-calendar-days"></i>
+                    <span>Best Trading Days</span>
+                </button>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Review my risk management. Am I risking too much or trading too frequently?')">
+                    <i class="fa-solid fa-shield-halved"></i>
+                    <span>Risk Review</span>
+                </button>
+
+                <button class="prompt-btn"
+                    onclick="sendQuickPrompt('Give me a personalized trading improvement plan based on my data')">
+                    <i class="fa-solid fa-rocket"></i>
+                    <span>Improvement Plan</span>
+                </button>
+            </div>
+
+            <div class="sidebar-footer">
+                <button class="clear-chat-btn" onclick="clearChat()">
+                    <i class="fa-solid fa-trash-can"></i>
+                    Clear Chat
+                </button>
+            </div>
+        </aside>
+
+        <!-- Chat Area -->
+        <div class="chat-area">
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chat-messages">
+                <!-- Welcome Message -->
+                <div class="message assistant">
+                    <div class="message-avatar">
+                        <i class="fa-solid fa-om"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="message-header">
+                            <span class="message-author">Guruji</span>
+                            <span class="message-time">Now</span>
+                        </div>
+                        <div class="message-text">
+                            <p>🙏 Namaste, fellow trader!</p>
+                            <p>I am <strong>Guruji</strong>, your AI trading mentor. I'm here to help you with:</p>
+                            <ul>
+                                <li>📊 Analyzing your trading patterns</li>
+                                <li>🧠 Trading psychology and discipline</li>
+                                <li>📈 Technical analysis concepts</li>
+                                <li>⚖️ Risk management strategies</li>
+                                <li>📝 Journaling and self-improvement</li>
+                            </ul>
+                            <p>Ask me anything about trading, and I shall guide you on your journey to consistent
+                                profitability. 🚀</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea id="chat-input" class="chat-input" placeholder="Ask Guruji anything about trading..."
+                        rows="1" onkeydown="handleKeyDown(event)"></textarea>
+                    <button class="send-btn" id="send-btn" onclick="sendMessage()">
+                        <i class="fa-solid fa-paper-plane"></i>
+                    </button>
+                </div>
+                <p class="input-hint">
+                    <i class="fa-solid fa-keyboard"></i> Press Enter to send, Shift+Enter for new line
+                </p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="guruji.js"></script>
+</body>
+
+</html>

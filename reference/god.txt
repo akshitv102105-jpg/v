@@ -1,0 +1,430 @@
+import { useState } from 'react';
+import { useProfile } from '@/hooks/useProfile';
+import { useTrades } from '@/hooks/useTrades';
+import { useJournals } from '@/hooks/useJournals';
+import { useAuth } from '@/contexts/AuthContext';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Progress } from '@/components/ui/progress';
+import { GodVortex } from '@/components/effects/GodVortex';
+import { 
+  User, 
+  Zap, 
+  Heart, 
+  Sparkles,
+  Flame,
+  Trophy,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Shield,
+  Swords,
+  Eye,
+  Edit2,
+  Save,
+  Star,
+  Award
+} from 'lucide-react';
+import { cn } from '@/lib/utils';
+
+const CHARACTER_ICONS: Record<string, React.ReactNode> = {
+  sniper: <Target className="h-8 w-8" />,
+  scalper: <Zap className="h-8 w-8" />,
+  swinger: <TrendingUp className="h-8 w-8" />,
+  ranger: <Eye className="h-8 w-8" />,
+  guardian: <Shield className="h-8 w-8" />,
+};
+
+const CHARACTER_DESCRIPTIONS: Record<string, string> = {
+  sniper: 'Patient precision. Few trades, high conviction.',
+  scalper: 'Speed and agility. Quick in, quick out.',
+  swinger: 'Ride the waves. Hold for bigger moves.',
+  ranger: 'All-seeing. Multiple timeframes, balanced approach.',
+  guardian: 'Defense first. Risk management is priority.',
+};
+
+export default function Profile() {
+  const { profile, loading, updateProfile } = useProfile();
+  const { trades, loading: tradesLoading } = useTrades();
+  const { getJournalingStreak } = useJournals();
+  const { user, signOut } = useAuth();
+  
+  const [isEditingUsername, setIsEditingUsername] = useState(false);
+  const [newUsername, setNewUsername] = useState('');
+
+  const journalStreak = getJournalingStreak();
+
+  // Calculate stats
+  const closedTrades = trades.filter(t => t.status === 'closed');
+  const winningTrades = closedTrades.filter(t => Number(t.profit_usd) > 0);
+  const losingTrades = closedTrades.filter(t => Number(t.profit_usd) < 0);
+  const totalPnL = closedTrades.reduce((sum, t) => sum + Number(t.profit_usd || 0), 0);
+  const winRate = closedTrades.length > 0 ? (winningTrades.length / closedTrades.length) * 100 : 0;
+  const disciplinedTrades = closedTrades.filter(t => t.is_disciplined);
+  const disciplineRate = closedTrades.length > 0 ? (disciplinedTrades.length / closedTrades.length) * 100 : 0;
+  const bestTrade = closedTrades.reduce((best, t) => Number(t.profit_usd) > Number(best?.profit_usd || 0) ? t : best, closedTrades[0]);
+  const worstTrade = closedTrades.reduce((worst, t) => Number(t.profit_usd) < Number(worst?.profit_usd || 0) ? t : worst, closedTrades[0]);
+  const totalXP = closedTrades.reduce((sum, t) => sum + (t.xp_earned || 0), 0);
+
+  const handleSaveUsername = () => {
+    if (newUsername.trim()) {
+      updateProfile.mutate({ 
+        username: newUsername.trim(),
+        created_at: profile?.created_at || new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      });
+      setIsEditingUsername(false);
+    }
+  };
+
+  const handleSelectCharacter = (characterType: string) => {
+    updateProfile.mutate({ 
+      character_type: characterType as any,
+      created_at: profile?.created_at || new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    });
+  };
+
+  if (loading || tradesLoading) {
+    return (
+      <div className="p-6 space-y-6">
+        <Skeleton className="h-10 w-48" />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-96" />
+          <Skeleton className="h-96 lg:col-span-2" />
+        </div>
+      </div>
+    );
+  }
+
+  const hp = profile?.hp ? Number(profile.hp) : 100;
+  const mana = profile?.mana ? Number(profile.mana) : 100;
+  const comboMultiplier = profile?.combo_multiplier ? Number(profile.combo_multiplier) : 1;
+  const xpProgress = ((profile?.xp || 0) % 1000) / 10; // XP progress to next level (0-100%)
+  const xpToNextLevel = 1000 - ((profile?.xp || 0) % 1000);
+
+  return (
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-bold flex items-center gap-2">
+          <User className="h-8 w-8 text-primary" />
+          Profile
+        </h1>
+        <p className="text-muted-foreground mt-1">
+          Your trading identity and stats
+        </p>
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Left Column - Profile Card */}
+        <div className="space-y-6">
+          {/* Main Profile Card */}
+          <Card className="overflow-hidden">
+            <div className="h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
+            <CardContent className="relative -mt-12 space-y-4">
+              {/* Avatar - God Vortex for all users */}
+              <div className="flex justify-center">
+                <GodVortex 
+                  size="md" 
+                  label={`LEVEL ${profile?.level || 1}`}
+                  auraColor="purple"
+                  intensity="high"
+                  animationSpeed="normal"
+                >
+                  {profile?.character_type ? (
+                    <div className="text-primary">
+                      {CHARACTER_ICONS[profile.character_type]}
+                    </div>
+                  ) : (
+                    <User className="h-10 w-10 text-primary" />
+                  )}
+                </GodVortex>
+              </div>
+
+              {/* Username */}
+              <div className="text-center">
+                {isEditingUsername ? (
+                  <div className="flex items-center gap-2 justify-center">
+                    <Input
+                      value={newUsername}
+                      onChange={(e) => setNewUsername(e.target.value)}
+                      placeholder="Enter username"
+                      className="max-w-[200px]"
+                      autoFocus
+                    />
+                    <Button size="icon" onClick={handleSaveUsername}>
+                      <Save className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="flex items-center justify-center gap-2">
+                    <h2 className="text-xl font-bold">
+                      {profile?.username || 'Anonymous Trader'}
+                    </h2>
+                    <Button 
+                      variant="ghost" 
+                      size="icon" 
+                      className="h-6 w-6"
+                      onClick={() => {
+                        setNewUsername(profile?.username || '');
+                        setIsEditingUsername(true);
+                      }}
+                    >
+                      <Edit2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                )}
+                <p className="text-sm text-muted-foreground">{user?.email}</p>
+              </div>
+
+              {/* Level Badge */}
+              <div className="flex justify-center">
+                <Badge variant="secondary" className="text-lg px-4 py-1 bg-primary/10 text-primary">
+                  <Star className="h-4 w-4 mr-1" />
+                  Level {profile?.level || 1}
+                </Badge>
+              </div>
+
+              {/* XP Progress */}
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-muted-foreground">XP to Level {(profile?.level || 1) + 1}</span>
+                  <span className="font-medium">{xpToNextLevel} XP</span>
+                </div>
+                <Progress value={xpProgress} className="h-2" />
+                <p className="text-xs text-center text-muted-foreground">
+                  Total: {profile?.xp || 0} XP earned
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Discipline Stats */}
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-lg flex items-center gap-2">
+                <Swords className="h-5 w-5" />
+                Combat Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* HP Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm flex items-center gap-1">
+                    <Heart className="h-4 w-4 text-red-500" />
+                    Health
+                  </span>
+                  <span className={cn(
+                    "text-sm font-medium",
+                    hp <= 30 ? "text-red-500" : hp <= 60 ? "text-yellow-500" : "text-green-500"
+                  )}>
+                    {hp.toFixed(0)}%
+                  </span>
+                </div>
+                <Progress 
+                  value={hp} 
+                  className={cn(
+                    "h-3",
+                    hp <= 30 ? "[&>div]:bg-red-500" : hp <= 60 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-green-500"
+                  )}
+                />
+              </div>
+
+              {/* Mana Bar */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm flex items-center gap-1">
+                    <Sparkles className="h-4 w-4 text-blue-500" />
+                    Mana
+                  </span>
+                  <span className={cn(
+                    "text-sm font-medium",
+                    mana <= 30 ? "text-red-500" : mana <= 60 ? "text-yellow-500" : "text-blue-500"
+                  )}>
+                    {mana.toFixed(0)}%
+                  </span>
+                </div>
+                <Progress 
+                  value={mana}
+                  className={cn(
+                    "h-3",
+                    mana <= 30 ? "[&>div]:bg-red-500" : mana <= 60 ? "[&>div]:bg-yellow-500" : "[&>div]:bg-blue-500"
+                  )}
+                />
+              </div>
+
+              {/* Combo */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <span className="flex items-center gap-2">
+                  <Flame className={cn("h-5 w-5", comboMultiplier > 1 ? "text-orange-500" : "text-muted-foreground")} />
+                  <span className="font-medium">Combo</span>
+                </span>
+                <Badge variant={comboMultiplier > 1 ? "default" : "secondary"}>
+                  {comboMultiplier.toFixed(1)}x Multiplier
+                </Badge>
+              </div>
+
+              {/* Streaks */}
+              <div className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
+                <span className="flex items-center gap-2">
+                  <Award className="h-5 w-5 text-yellow-500" />
+                  <span className="font-medium">Journal Streak</span>
+                </span>
+                <Badge variant="secondary">
+                  {journalStreak} days
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Right Column */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Character Selection */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5 text-yellow-500" />
+                Trading Class
+              </CardTitle>
+              <CardDescription>Choose your trading identity</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                {['sniper', 'scalper', 'swinger', 'ranger', 'guardian'].map((type) => (
+                  <button
+                    key={type}
+                    onClick={() => handleSelectCharacter(type)}
+                    className={cn(
+                      "p-4 rounded-lg border-2 transition-all hover:scale-105 text-center",
+                      profile?.character_type === type
+                        ? "border-primary bg-primary/10"
+                        : "border-border hover:border-primary/50"
+                    )}
+                  >
+                    <div className={cn(
+                      "mx-auto mb-2",
+                      profile?.character_type === type ? "text-primary" : "text-muted-foreground"
+                    )}>
+                      {CHARACTER_ICONS[type]}
+                    </div>
+                    <span className="font-medium capitalize text-sm">{type}</span>
+                  </button>
+                ))}
+              </div>
+              {profile?.character_type && (
+                <p className="text-sm text-muted-foreground mt-4 text-center">
+                  {CHARACTER_DESCRIPTIONS[profile.character_type]}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Trading Stats */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <TrendingUp className="h-5 w-5" />
+                Trading Statistics
+              </CardTitle>
+              <CardDescription>Your all-time performance</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                  <p className="text-2xl font-bold">{closedTrades.length}</p>
+                  <p className="text-sm text-muted-foreground">Total Trades</p>
+                </div>
+
+                <div className={cn(
+                  "p-4 rounded-lg text-center",
+                  totalPnL >= 0 ? "bg-green-500/10" : "bg-red-500/10"
+                )}>
+                  <p className={cn(
+                    "text-2xl font-bold",
+                    totalPnL >= 0 ? "text-green-500" : "text-red-500"
+                  )}>
+                    {totalPnL >= 0 ? '+' : ''}{totalPnL.toFixed(2)}
+                  </p>
+                  <p className="text-sm text-muted-foreground">Total P&L</p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                  <p className="text-2xl font-bold">{winRate.toFixed(1)}%</p>
+                  <p className="text-sm text-muted-foreground">Win Rate</p>
+                </div>
+
+                <div className="p-4 rounded-lg bg-muted/50 text-center">
+                  <p className="text-2xl font-bold">{disciplineRate.toFixed(0)}%</p>
+                  <p className="text-sm text-muted-foreground">Discipline</p>
+                </div>
+              </div>
+
+              {/* Win/Loss breakdown */}
+              <div className="mt-6 grid grid-cols-2 gap-4">
+                <div className="p-4 rounded-lg border border-green-500/20 bg-green-500/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-green-500" />
+                    <span className="font-medium">Wins</span>
+                  </div>
+                  <p className="text-3xl font-bold text-green-500">{winningTrades.length}</p>
+                  {bestTrade && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Best: +${Number(bestTrade.profit_usd).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+
+                <div className="p-4 rounded-lg border border-red-500/20 bg-red-500/5">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingDown className="h-5 w-5 text-red-500" />
+                    <span className="font-medium">Losses</span>
+                  </div>
+                  <p className="text-3xl font-bold text-red-500">{losingTrades.length}</p>
+                  {worstTrade && (
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Worst: ${Number(worstTrade.profit_usd).toFixed(2)}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* XP Summary */}
+              <div className="mt-6 p-4 rounded-lg bg-primary/5 border border-primary/20">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-primary" />
+                    <span className="font-medium">Experience Earned</span>
+                  </div>
+                  <Badge variant="secondary" className="text-lg">
+                    {totalXP} XP
+                  </Badge>
+                </div>
+                <p className="text-sm text-muted-foreground mt-2">
+                  XP is earned through discipline, not profits. Trade smart, level up!
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Account Actions */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Account</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Button variant="outline" onClick={signOut}>
+                Sign Out
+              </Button>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
