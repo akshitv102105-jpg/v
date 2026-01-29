@@ -93,9 +93,21 @@ export const useHabits = () => {
         }
     };
 
+    const deleteHabit = async (id: string) => {
+        if (!user) return;
+        const { error } = await supabase
+            .from('habits')
+            .delete()
+            .eq('id', id);
+
+        if (!error) {
+            setHabits(prev => prev.filter(h => h.id !== id));
+        }
+    };
+
     useEffect(() => {
         fetchHabits();
     }, [user]);
 
-    return { habits, completions, toggleHabit, addHabit, loading };
+    return { habits, completions, toggleHabit, addHabit, deleteHabit, loading };
 };

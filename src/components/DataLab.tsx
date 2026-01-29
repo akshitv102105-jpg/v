@@ -1,5 +1,6 @@
 
 import React, { useState, useMemo, useEffect } from 'react';
+import { useUndo } from '../contexts/UndoContext';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { Trade } from '../types';
 
@@ -7,9 +8,11 @@ interface DataLabProps {
     trades?: Trade[];
     onSeekWisdom?: (data: any) => void;
     onDeleteTrade?: (id: string) => void;
+    onRestoreTrade?: (trade: Trade) => void;
 }
 
-const DataLab: React.FC<DataLabProps> = ({ trades = [], onSeekWisdom, onDeleteTrade }) => {
+const DataLab: React.FC<DataLabProps> = ({ trades = [], onSeekWisdom, onDeleteTrade, onRestoreTrade }) => {
+    const { showUndo, confirmDelete } = useUndo();
     // View State
     const [view, setView] = useState<'simulation' | 'backtest'>('simulation');
 
@@ -334,7 +337,19 @@ const DataLab: React.FC<DataLabProps> = ({ trades = [], onSeekWisdom, onDeleteTr
                                             <td className="px-4 py-3 text-right font-mono text-indigo-300">{t.riskReward ? `${t.riskReward}R` : '-'}</td>
                                             <td className="px-4 py-3 text-right">
                                                 <button
-                                                    onClick={() => onDeleteTrade && onDeleteTrade(t.id)}
+                                                    onClick={() => {
+                                                        if (onDeleteTrade) {
+                                                            confirmDelete("Delete this backtest trade?", () => {
+                                                                const tradeToRestore = t;
+                                                                onDeleteTrade(t.id);
+                                                                if (onRestoreTrade) {
+                                                                    showUndo("Backtest trade deleted.", () => {
+                                                                        onRestoreTrade(tradeToRestore);
+                                                                    });
+                                                                }
+                                                            });
+                                                        }
+                                                    }}
                                                     className="text-slate-600 hover:text-rose-500 transition-colors opacity-0 group-hover:opacity-100 p-1"
                                                     title="Delete Data Trade"
                                                 >

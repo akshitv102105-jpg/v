@@ -1,20 +1,23 @@
 
 import React, { useState, useMemo } from 'react';
+import { useUndo } from '../contexts/UndoContext';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Habit, HabitCompletions } from '../types';
 
 interface HabitTrackerProps {
     habits: Habit[];
-    setHabits: (habits: Habit[]) => void;
     completions: HabitCompletions;
-    setCompletions: React.Dispatch<React.SetStateAction<HabitCompletions>>;
+    onToggleHabit: (habitId: string, date: string) => Promise<void>;
+    onAddHabit: (name: string) => Promise<void>;
+    onDeleteHabit: (id: string) => Promise<void>;
 }
 
-const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, setHabits, completions, setCompletions }) => {
+const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, completions, onToggleHabit, onAddHabit, onDeleteHabit }) => {
     // --- State ---
     const [currentDate, setCurrentDate] = useState(new Date());
     const [isEditMode, setIsEditMode] = useState(false);
     const [newHabitName, setNewHabitName] = useState('');
+    const { showUndo, confirmDelete } = useUndo();
 
     // --- Date Logic ---
     const daysInMonth = useMemo((): number => {
@@ -52,11 +55,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, setHabits, completi
 
     // --- Actions ---
     const toggleHabit = (habitId: string, dateStr: string) => {
-        const key = `${habitId}_${dateStr}`;
-        setCompletions(prev => ({
-            ...prev,
-            [key]: !prev[key]
-        }));
+        onToggleHabit(habitId, dateStr);
     };
 
     const changeMonth = (offset: number) => {
@@ -65,12 +64,17 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, setHabits, completi
 
     const addHabit = () => {
         if (!newHabitName.trim()) return;
-        setHabits([...habits, { id: Date.now().toString(), name: newHabitName }]);
+        onAddHabit(newHabitName);
         setNewHabitName('');
     };
 
     const removeHabit = (id: string) => {
-        setHabits(habits.filter(h => h.id !== id));
+        const habitToDelete = habits.find(h => h.id === id);
+        if (!habitToDelete) return;
+
+        confirmDelete(`Delete habit "${habitToDelete.name}"?`, () => {
+            onDeleteHabit(id);
+        });
     };
 
     // --- Stats Calculations ---
@@ -132,8 +136,8 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, setHabits, completi
                     <button
                         onClick={() => setIsEditMode(!isEditMode)}
                         className={`flex items-center gap-2 rounded-lg border px-4 py-2 text-sm font-medium transition-all ${isEditMode
-                                ? 'bg-purple-500/10 border-purple-500/50 text-purple-300'
-                                : 'bg-[#151A25] border-slate-700 text-slate-300 hover:text-white hover:border-slate-500'
+                            ? 'bg-purple-500/10 border-purple-500/50 text-purple-300'
+                            : 'bg-[#151A25] border-slate-700 text-slate-300 hover:text-white hover:border-slate-500'
                             }`}
                     >
                         <i className={`fa-solid ${isEditMode ? 'fa-check' : 'fa-pen'}`}></i>
@@ -267,8 +271,8 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, setHabits, completi
                                                                 <button
                                                                     onClick={() => toggleHabit(habit.id, day.fullDate)}
                                                                     className={`h-5 w-5 rounded border transition-all duration-200 flex items-center justify-center ${isChecked
-                                                                            ? 'bg-purple-600 border-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.4)]'
-                                                                            : 'bg-[#0B0E14] border-slate-700 hover:border-slate-500'
+                                                                        ? 'bg-purple-600 border-purple-600 shadow-[0_0_10px_rgba(147,51,234,0.4)]'
+                                                                        : 'bg-[#0B0E14] border-slate-700 hover:border-slate-500'
                                                                         }`}
                                                                 >
                                                                     {isChecked && <i className="fa-solid fa-check text-[10px] text-white"></i>}

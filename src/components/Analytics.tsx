@@ -1,5 +1,6 @@
 ﻿
 import React, { useState, useMemo, useRef, useEffect } from 'react';
+import { useUndo } from '../contexts/UndoContext';
 import Papa from 'papaparse';
 import { Trade, TradeSide, TradeStatus, getCurrencyFormatter, Strategy, Tag, DateFilterState, DateFilterType, FeeConfig, TAG_COLORS } from '../types';
 import {
@@ -45,11 +46,7 @@ const METRIC_DEFINITIONS: Record<string, { title: string; beginner: string; adva
         beginner: 'The average amount of money you can expect to make (or lose) on every single trade.',
         advanced: 'Formula: (Win % Ã— Avg Win) - (Loss % Ã— Avg Loss). This is the pure mathematical "edge" of your system per execution, regardless of frequency.'
     },
-    'Realized R:R': {
-        title: 'Realized R:R (Avg Win / Avg Loss)',
-        beginner: 'For every dollar lost, how many dollars do you win on average?',
-        advanced: 'Formula: Average Win / Average Loss. This is your true payoff ratio. A value > 1.5 combined with a 40%+ win rate is usually a profitable edge.'
-    },
+
     'Sharpe Ratio': {
         title: 'Sharpe Ratio',
         beginner: 'A score that compares your returns against the risk/volatility you took. Higher is better.',
@@ -248,6 +245,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
     onRestoreTrades, onSeekWisdom
 }) => {
     const [activeTab, setActiveTab] = useState('Analysis');
+    const { showUndo, confirmDelete } = useUndo();
     const [deepDiveView, setDeepDiveView] = useState<'Symbol' | 'Strategy' | 'Day' | 'Hour' | 'Side'>('Symbol');
     const [viewTrade, setViewTrade] = useState<Trade | null>(null);
 
@@ -270,12 +268,12 @@ const Analytics: React.FC<AnalyticsProps> = ({
     // Bulk Delete State
     const [isSelectionMode, setIsSelectionMode] = useState(false);
     const [selectedTradeIds, setSelectedTradeIds] = useState<Set<string>>(new Set());
-    const [undoData, setUndoData] = useState<{ trades: Trade[], timeoutId: NodeJS.Timeout } | null>(null);
+    // const [undoData, setUndoData] = useState<{ trades: Trade[], timeoutId: NodeJS.Timeout } | null>(null); // Removed for global undo
 
     const toggleSelectionMode = () => {
         setIsSelectionMode(!isSelectionMode);
         setSelectedTradeIds(new Set());
-        setUndoData(null); // Clear undo if mode changes (optional, but safer)
+        // setUndoData(null); 
     };
 
     const toggleTradeSelection = (id: string) => {
@@ -297,35 +295,25 @@ const Analytics: React.FC<AnalyticsProps> = ({
         const idsToDelete = Array.from(selectedTradeIds);
         if (idsToDelete.length === 0) return;
 
-        if (confirm(`Delete ${idsToDelete.length} trades?`)) {
+        confirmDelete(`Delete ${idsToDelete.length} trades?`, () => {
             // Save for undo
             const tradesToDelete = trades.filter(t => idsToDelete.includes(t.id));
 
             // Execute delete
             onDeleteTrades?.(idsToDelete);
 
-            // Set Undo State
-            if (undoData) clearTimeout(undoData.timeoutId); // Clear existing timer
-
-            const timeoutId = setTimeout(() => {
-                setUndoData(null); // Clear undo after 5 seconds
-            }, 5000);
-
-            setUndoData({ trades: tradesToDelete, timeoutId });
-
             // Exit selection mode
             setIsSelectionMode(false);
             setSelectedTradeIds(new Set());
-        }
+
+            // Global Undo
+            showUndo(`${idsToDelete.length} trades deleted`, () => {
+                onRestoreTrades?.(tradesToDelete);
+            });
+        });
     };
 
-    const handleUndo = () => {
-        if (undoData) {
-            onRestoreTrades?.(undoData.trades);
-            clearTimeout(undoData.timeoutId);
-            setUndoData(null);
-        }
-    };
+
 
     // Performance Chart Toggles
     const [perfToggles, setPerfToggles] = useState({
@@ -370,9 +358,16 @@ const Analytics: React.FC<AnalyticsProps> = ({
     }, [trades, strategies]);
     const uniqueTags = useMemo(() => {
         const allTags = new Set<string>();
+        // 1. From tag library
         if (tags) { (Object.values(tags) as Tag[][]).forEach(categoryTags => categoryTags.forEach(tag => allTags.add(tag.name))); }
+        // 2. Scraped from actual trades (covers imported/old tags)
+        trades.forEach(t => {
+            if (t.tags) t.tags.forEach(tag => allTags.add(tag));
+            if (t.entryReasons) t.entryReasons.forEach(r => allTags.add(r));
+            if (t.mentalState) t.mentalState.forEach(s => allTags.add(s));
+        });
         return ['All', ...Array.from(allTags).sort()];
-    }, [tags]);
+    }, [tags, trades]);
 
     const resetFilters = () => {
         setFilterSymbol('All'); setFilterStrategy('All'); setFilterSetup('All'); setFilterSide('All'); setFilterTag('All'); setFilterQuality('All');
@@ -395,10 +390,13 @@ const Analytics: React.FC<AnalyticsProps> = ({
         if (dateFilter.type === 'RELATIVE' && dateFilter.days) {
             const past = new Date(new Date().getTime() - (dateFilter.days * 24 * 60 * 60 * 1000));
             data = data.filter(t => new Date(t.entryDate) >= past);
-        } else if (dateFilter.type === 'ABSOLUTE' && dateFilter.range) {
+        } else if (dateFilter.type === 'ABSOLUTE' && dateFilter.range && dateFilter.range.start && dateFilter.range.end) {
             const start = new Date(dateFilter.range.start); start.setHours(0, 0, 0, 0);
             const end = new Date(dateFilter.range.end); end.setHours(23, 59, 59, 999);
-            data = data.filter(t => { const entry = new Date(t.entryDate); return entry >= start && entry <= end; });
+            data = data.filter(t => {
+                const entry = new Date(t.entryDate);
+                return !isNaN(entry.getTime()) && entry >= start && entry <= end;
+            });
         }
         return data;
     }, [trades, filterSymbol, filterStrategy, filterSetup, filterSide, filterTag, filterQuality, dateFilter]);
@@ -639,20 +637,38 @@ const Analytics: React.FC<AnalyticsProps> = ({
         const headers = fields.map(h => h.toLowerCase().trim());
         const findCol = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h === k || h.includes(k)));
 
-        // Core Columns Mapping
-        const dateIdx = findCol(['time', 'date', 'created', 'timestamp', 'datetime']);
-        const symbolIdx = findCol(['contract', 'symbol', 'pair', 'instrument', 'ticker', 'market']);
-        const sideIdx = findCol(['side', 'type', 'direction', 'action']);
-        const priceIdx = findCol(['exec.price', 'price', 'avg', 'entry', 'fill', 'avg price']);
-        const qtyIdx = findCol(['qty', 'quantity', 'amount', 'size', 'volume', 'executed']);
-        const pnlIdx = findCol(['realised p&l', 'pnl', 'profit', 'roe', 'realized']);
-        const feeIdx = findCol(['trading fees', 'fee', 'commission']);
+        // --- UNIVERSAL COLUMN MAPPING ---
+        // 1. Date/Time (Start & End)
+        const dateIdx = findCol(['entry date', 'entry time', 'open date', 'open time', 'time', 'date', 'created', 'transaction time', 'utctime']);
+        const exitDateIdx = findCol(['exit date', 'exit time', 'close date', 'close time', 'closed', 'update time', 'endtime']);
+
+        // 2. Asset Info
+        const symbolIdx = findCol(['contract', 'symbol', 'pair', 'instrument', 'ticker', 'market', 'currency pair', 'item']);
+        const sideIdx = findCol(['side', 'type', 'direction', 'action', 'order type']); // Buy/Sell/Long/Short
+
+        // 3. Price Info
+        const priceIdx = findCol(['entry price', 'open price', 'exec.price', 'price', 'entry', 'avg. price', 'avg price', 'fill price', 'order price']);
+        const exitPriceIdx = findCol(['exit price', 'close price', 'exit', 'close', 'avg. close price', 'sold price']);
+
+        // 4. Quantity/Volume
+        const qtyIdx = findCol(['qty', 'quantity', 'amount', 'size', 'volume', 'executed', 'filled', 'contracts']);
+
+        // 5. Financials
+        const pnlIdx = findCol(['realised p&l', 'pnl', 'profit', 'roe', 'realized', 'realized pnl', 'net profit', 'pl']);
+        const feeIdx = findCol(['trading fees', 'fee', 'commission', 'paid fees']);
+
+        // 6. Meta Data
+        const strategyIdx = findCol(['strategy', 'system', 'method', 'algo']);
+        const tagsIdx = findCol(['tags', 'labels', 'categories']);
+        const setupsIdx = findCol(['setups', 'patterns', 'setup']);
+        const notesIdx = findCol(['notes', 'comments', 'description']);
+        const qualityIdx = findCol(['quality', 'rating', 'score', 'stars']);
         const statusIdx = findCol(['status', 'state']);
 
         const errors: string[] = [];
         if (symbolIdx === -1) errors.push('Missing Symbol column (e.g., Symbol, Pair, Ticker).');
-        if (priceIdx === -1) errors.push('Missing Price column (e.g., Price, Avg Price, Entry).');
-        if (dateIdx === -1) errors.push('Missing Date column (e.g., Date, Time, Created).');
+        if (priceIdx === -1) errors.push('Missing Entry Price column (e.g., Entry Price, Price).');
+        if (dateIdx === -1) errors.push('Missing Entry Date column (e.g., Entry Date, Date).');
 
         if (errors.length > 0) return { trades: [], errors };
 
@@ -660,65 +676,128 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
         data.forEach((row: any, i) => {
             try {
-                const getVal = (idx: number) => idx !== -1 ? row[fields[idx]] : undefined;
+                const getVal = (idx: number) => {
+                    if (idx === -1) return undefined;
+                    const val = row[fields[idx]];
+                    return (val === null || val === undefined) ? '' : String(val).trim();
+                };
 
                 const statusVal = getVal(statusIdx);
-                if (statusVal && (String(statusVal).toLowerCase().includes('cancelled') || String(statusVal).toLowerCase().includes('rejected'))) return;
+                // Skip cancelled/rejected orders common in exports
+                if (statusVal && /cancelled|rejected|failed/i.test(statusVal)) return;
 
-                let dateStr = getVal(dateIdx);
-                if (dateStr) {
-                    dateStr = String(dateStr).replace(/\s+[A-Z]{3,4}\s+Asia\/[a-zA-Z]+$/, '').trim();
-                    dateStr = dateStr.replace(/\s[A-Z]{3}$/, '').trim();
-                }
-                const dateVal = new Date(dateStr);
-                const validDate = !isNaN(dateVal.getTime()) ? dateVal.toISOString() : new Date().toISOString();
+                // --- ROBUST DATE PARSING ---
+                const parseDate = (dateStr: string | undefined): Date | null => {
+                    if (!dateStr) return null;
+                    // Handle Excel serial dates if any import libraries convert them poorly, 
+                    // but usually papaparse returns strings.
 
-                const symbol = getVal(symbolIdx) ? String(getVal(symbolIdx)).toUpperCase() : 'UNKNOWN';
+                    // Handle "2023-01-01 12:00" vs "01-01-2023" vs "12/31/2023"
+                    let d = new Date(dateStr.replace(' UTC', ''));
 
-                const priceStr = String(getVal(priceIdx)).replace(/[^0-9.-]/g, '');
-                const price = parseFloat(priceStr);
+                    // If invalid, try swapping DD/MM if typically US/EU confusion, or fallback to current
+                    if (isNaN(d.getTime())) {
+                        // Common exchange format fixes
+                        d = new Date(dateStr.replace(/\./g, '-')); // 2023.01.01 -> 2023-01-01
+                    }
 
-                const qtyStr = String(getVal(qtyIdx)).replace(/[^0-9.-]/g, '');
-                const qty = parseFloat(qtyStr);
+                    return isNaN(d.getTime()) ? null : d;
+                };
 
-                const pnlStr = pnlIdx !== -1 ? String(getVal(pnlIdx)).replace(/[^0-9.-]/g, '') : '0';
-                const pnl = parseFloat(pnlStr);
+                const dateStr = getVal(dateIdx);
+                const entryDateObj = parseDate(dateStr) || new Date();
+                // Fallback to today is dangerous for history, but better than crashing. Mark as note?
+                const validEntryDate = entryDateObj.toISOString();
 
-                const feeStr = feeIdx !== -1 ? String(getVal(feeIdx)).replace(/[^0-9.-]/g, '') : '0';
-                const fee = parseFloat(feeStr);
+                const exitDateStr = getVal(exitDateIdx);
+                const exitDateObj = parseDate(exitDateStr);
+                const validExitDate = exitDateObj ? exitDateObj.toISOString() : undefined;
 
+                const symbol = getVal(symbolIdx)?.toUpperCase().replace(/_/g, '').replace(/\//g, '') || 'UNKNOWN';
+
+                // --- ROBUST NUMERIC PARSING ---
+                const cleanNum = (val: string | undefined) => {
+                    if (!val) return 0;
+                    // Remove currency symbols, commas
+                    const cleaned = val.replace(/[^0-9.\-]/g, '');
+                    const parsed = parseFloat(cleaned);
+                    return isNaN(parsed) ? 0 : parsed;
+                };
+
+                const entryPrice = cleanNum(getVal(priceIdx));
+                const exitPrice = exitPriceIdx !== -1 ? cleanNum(getVal(exitPriceIdx)) : undefined;
+                const qty = cleanNum(getVal(qtyIdx));
+                const pnl = pnlIdx !== -1 ? cleanNum(getVal(pnlIdx)) : 0;
+                const fee = feeIdx !== -1 ? cleanNum(getVal(feeIdx)) : 0;
+                const quality = qualityIdx !== -1 ? Math.min(5, Math.max(0, parseInt(getVal(qualityIdx) || '0'))) : 0;
+
+                // --- SMART SIDE DETECTION ---
                 let side = TradeSide.LONG;
-                const sideVal = getVal(sideIdx);
-                if (sideVal) {
-                    const s = String(sideVal).toLowerCase();
-                    if (s.includes('sell') || s.includes('short')) side = TradeSide.SHORT;
-                }
+                const sideRaw = getVal(sideIdx)?.toLowerCase() || '';
 
-                const status = (pnl !== 0 || fee > 0 || (statusVal && String(statusVal).toLowerCase() === 'closed')) ? TradeStatus.CLOSED : TradeStatus.OPEN;
+                // Explicit detect
+                if (sideRaw.includes('short') || sideRaw.includes('sell') || sideRaw === 's') side = TradeSide.SHORT;
+                // Auto detect from PnL if side missing? (Risky, skip for now)
+                // Binance often has 'BUY' for entry and 'SELL' for exit. This importer assumes rows = trades.
+                // If rows = executions, we might need a different approach, but simplistic robust is best for now.
 
-                if (!isNaN(price) && symbol !== 'UNKNOWN') {
+                // --- STATUS INFERENCE ---
+                let status = TradeStatus.OPEN;
+
+                // If explicit 'Closed' or has exit date or has realized PnL/Fee that implies closure
+                const impliesClosed =
+                    (statusVal && statusVal.toLowerCase() === 'closed') ||
+                    validExitDate !== undefined ||
+                    (pnl !== 0 && Math.abs(pnl) > 0.000001); // Non-zero PnL usually means closed
+
+                status = impliesClosed ? TradeStatus.CLOSED : TradeStatus.OPEN;
+
+                // --- META DATA ---
+                const parseList = (idx: number) => {
+                    const val = getVal(idx);
+                    if (!val) return [];
+                    return val.split(/[|;,]/).map((s: string) => s.trim()).filter((s: string) => s.length > 0);
+                };
+
+                const tags = parseList(tagsIdx);
+                const setups = parseList(setupsIdx);
+                const strategy = strategyIdx !== -1 ? (getVal(strategyIdx) || 'Imported') : 'Imported';
+                const notes = notesIdx !== -1 ? (getVal(notesIdx) || '') : `Imported ${symbol} trade`;
+
+                if (Math.abs(entryPrice) > 0 && symbol !== 'UNKNOWN') {
                     parsedTrades.push({
                         id: `imp-${Date.now()}-${i}`,
                         symbol,
                         side,
-                        entryPrice: price,
-                        quantity: isNaN(qty) ? 0 : Math.abs(qty),
-                        pnl: isNaN(pnl) ? 0 : pnl,
-                        pnlPercentage: 0,
+                        entryPrice,
+                        exitPrice: exitPrice || (status === TradeStatus.CLOSED ? entryPrice : undefined),
+                        quantity: qty,
+                        pnl,
+                        pnlPercentage: (entryPrice > 0 && Math.abs(pnl) > 0)
+                            ? (side === TradeSide.LONG ? (pnl / (entryPrice * qty)) : (pnl / (entryPrice * qty))) * 100
+                            : 0, // Approx
                         status,
-                        entryDate: validDate,
-                        exitDate: status === TradeStatus.CLOSED ? validDate : undefined,
+                        entryDate: validEntryDate,
+                        exitDate: validExitDate || (status === TradeStatus.CLOSED ? validEntryDate : undefined),
                         exchange: 'Imported',
-                        strategy: 'Imported',
-                        notes: `Imported via CSV. Fees: ${fee.toFixed(4)}`,
+                        strategy,
+                        strategyId: undefined,
+                        notes,
                         riskReward: 0,
-                        capital: Math.abs(price * qty),
+                        capital: Math.abs(entryPrice * qty),
                         leverage: 1,
-                        tradeType: 'PAST'
+                        tradeType: 'PAST', // Always mark imports as PAST to avoid messing with Live logic
+                        tags,
+                        setups,
+                        exitQuality: quality,
+                        entryReasons: [],
+                        exitReasons: [],
+                        mentalState: []
                     });
                 }
+
             } catch (err) {
-                console.error('Row parse error:', err);
+                console.warn('Row skip:', err);
             }
         });
 
@@ -801,29 +880,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
     return (
         <div className="space-y-8 animate-in fade-in duration-500 pb-12 relative">
             {/* Undo Notification */}
-            {undoData && (
-                <div className="fixed bottom-8 left-8 z-50 flex items-center gap-4 bg-[#151A25] border border-slate-700 p-4 rounded-lg shadow-2xl animate-in fade-in slide-in-from-bottom-4">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-500">
-                            <i className="fa-solid fa-check"></i>
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-white">Trades Deleted</p>
-                            <p className="text-xs text-slate-500">{undoData.trades.length} trades removed.</p>
-                        </div>
-                    </div>
-                    <button
-                        onClick={handleUndo}
-                        className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded flex items-center gap-2 transition-colors ml-4"
-                    >
-                        <i className="fa-solid fa-rotate-left"></i> Undo
-                    </button>
-                    <button onClick={() => setUndoData(null)} className="text-slate-500 hover:text-white ml-2">
-                        <i className="fa-solid fa-xmark"></i>
-                    </button>
-                    <div className="absolute bottom-0 left-0 h-1 bg-indigo-500 animate-[width_5s_linear_forwards]" style={{ width: '100%' }}></div>
-                </div>
-            )}
+
 
             <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
                 <div className="space-y-1">
@@ -990,7 +1047,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                             {/* Detailed Grid */}
                             <div className="grid grid-cols-2 md:grid-cols-4 gap-5">
                                 <StatCard label="Expectancy" value={`${expectancy < 0 ? '-' : ''}${currency.symbol}${Math.abs(expectancy).toFixed(2)}`} valueColor={expectancy >= 0 ? 'text-emerald-400' : 'text-rose-400'} onInfoClick={() => setInfoModalKey('Expectancy')} />
-                                <StatCard label="Avg. Win / Loss" value={`${realizedRR.toFixed(2)}`} onInfoClick={() => setInfoModalKey('Realized R:R')} />
+
                                 <StatCard label="Sharpe Ratio" value={sharpeRatio.toFixed(2)} onInfoClick={() => setInfoModalKey('Sharpe Ratio')} />
                                 <StatCard label="Avg. Win" value={formatCurrencyValue(avgWin)} valueColor="text-emerald-400" onInfoClick={() => setInfoModalKey('Avg. Win')} />
 
@@ -1076,6 +1133,8 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                             </th>
                                         )}
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Date</th>
+                                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Entry Time</th>
+                                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Exit Time</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Symbol</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap text-center">Side</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Tags</th>
@@ -1120,7 +1179,13 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                                     </td>
                                                 )}
                                                 <td className="px-6 py-4 text-slate-400 whitespace-nowrap">
-                                                    {new Date(trade.entryDate).toLocaleString([], { month: 'short', day: '2-digit', hour: '2-digit', minute: '2-digit' })}
+                                                    {new Date(trade.entryDate).toLocaleDateString([], { month: 'short', day: '2-digit' })}
+                                                </td>
+                                                <td className="px-6 py-4 font-mono text-slate-400 text-xs">
+                                                    {new Date(trade.entryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </td>
+                                                <td className="px-6 py-4 font-mono text-slate-400 text-xs">
+                                                    {trade.exitDate ? new Date(trade.exitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-white">{trade.symbol}</td>
                                                 <td className="px-6 py-4 text-center">
@@ -1359,6 +1424,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                         </div>
                     </div>
 
+
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                         {/* Chart Column */}
                         <div className="lg:col-span-2">
@@ -1433,6 +1499,184 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                     </table>
                                 </div>
                             </Card>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                        {/* 1. Win-Rate by Duration */}
+                        <div className="bg-[#0B0E14] border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-end min-h-[180px]">
+                            <div className="absolute top-0 right-0 p-4 opacity-20">
+                                <i className="fa-solid fa-clock text-4xl text-purple-500"></i>
+                            </div>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Win-Rate by Duration</h3>
+
+                            {(() => {
+                                const intradayTrades = filteredTrades.filter(t => {
+                                    if (!t.exitDate) return false;
+                                    const entry = new Date(t.entryDate);
+                                    const exit = new Date(t.exitDate);
+                                    return entry.getDate() === exit.getDate() && entry.getMonth() === exit.getMonth() && entry.getFullYear() === exit.getFullYear();
+                                });
+                                const multidayTrades = filteredTrades.filter(t => {
+                                    if (!t.exitDate) return false;
+                                    const entry = new Date(t.entryDate);
+                                    const exit = new Date(t.exitDate);
+                                    return !(entry.getDate() === exit.getDate() && entry.getMonth() === exit.getMonth() && entry.getFullYear() === exit.getFullYear());
+                                });
+
+                                const getWR = (ts: Trade[]) => {
+                                    if (ts.length === 0) return 0;
+                                    const wins = ts.filter(t => (t.pnl || 0) > 0).length;
+                                    return (wins / ts.length) * 100;
+                                };
+
+                                const intradayWR = getWR(intradayTrades);
+                                const multidayWR = getWR(multidayTrades);
+
+                                return (
+                                    <div className="space-y-6 w-full">
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Intraday</span>
+                                                <span className="text-white">{Math.round(intradayWR)}%</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${intradayWR}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Multiday</span>
+                                                <span className="text-white">{Math.round(multidayWR)}%</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500" style={{ width: `${multidayWR}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* 2. Average Hold Time */}
+                        <div className="bg-[#0B0E14] border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-end min-h-[180px]">
+                            <div className="absolute top-0 right-0 p-4 opacity-20">
+                                <i className="fa-solid fa-stopwatch text-4xl text-emerald-500"></i>
+                            </div>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Average Hold Time</h3>
+
+                            {(() => {
+                                const getAvgDuration = (ts: Trade[]) => {
+                                    if (ts.length === 0) return 0;
+                                    const totalMs = ts.reduce((acc, t) => {
+                                        if (!t.exitDate) return acc;
+                                        return acc + (new Date(t.exitDate).getTime() - new Date(t.entryDate).getTime());
+                                    }, 0);
+                                    return totalMs / ts.length;
+                                };
+
+                                const formatDuration = (ms: number) => {
+                                    if (!ms) return '0m';
+                                    const minutes = Math.floor(ms / 60000) % 60;
+                                    const hours = Math.floor(ms / 3600000) % 24;
+                                    const days = Math.floor(ms / 86400000);
+                                    if (days > 0) return `${days}d ${hours}h`;
+                                    if (hours > 0) return `${hours}h ${minutes}m`;
+                                    return `${minutes}m`;
+                                };
+
+                                const wins = filteredTrades.filter(t => (t.pnl || 0) > 0);
+                                const losses = filteredTrades.filter(t => (t.pnl || 0) <= 0);
+
+                                const avgWinDur = getAvgDuration(wins);
+                                const avgLossDur = getAvgDuration(losses);
+
+                                // Normalize for progress bar (cap at max of the two * 1.2)
+                                const max = Math.max(avgWinDur, avgLossDur, 1) * 1.2;
+
+                                return (
+                                    <div className="space-y-6 w-full">
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Wins</span>
+                                                <span className="text-white font-mono">{formatDuration(avgWinDur)}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-emerald-500" style={{ width: `${(avgWinDur / max) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Losses</span>
+                                                <span className="text-white font-mono">{formatDuration(avgLossDur)}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-rose-500" style={{ width: `${(avgLossDur / max) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
+                        </div>
+
+                        {/* 3. Position Type (Long vs Short Duration) */}
+                        <div className="bg-[#0B0E14] border border-slate-800 rounded-2xl p-6 relative overflow-hidden flex flex-col justify-end min-h-[180px]">
+                            <div className="absolute top-0 right-0 p-4 opacity-20">
+                                <i className="fa-solid fa-layer-group text-4xl text-indigo-500"></i>
+                            </div>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Position Type</h3>
+
+                            {(() => {
+                                const getAvgDuration = (ts: Trade[]) => {
+                                    if (ts.length === 0) return 0;
+                                    const totalMs = ts.reduce((acc, t) => {
+                                        if (!t.exitDate) return acc;
+                                        return acc + (new Date(t.exitDate).getTime() - new Date(t.entryDate).getTime());
+                                    }, 0);
+                                    return totalMs / ts.length;
+                                };
+
+                                const formatDuration = (ms: number) => {
+                                    if (!ms) return '0m';
+                                    const minutes = Math.floor(ms / 60000) % 60;
+                                    const hours = Math.floor(ms / 3600000) % 24;
+                                    const days = Math.floor(ms / 86400000);
+                                    if (days > 0) return `${days}d ${hours}h`;
+                                    if (hours > 0) return `${hours}h ${minutes}m`;
+                                    return `${minutes}m`;
+                                };
+
+                                const longs = filteredTrades.filter(t => t.side === TradeSide.LONG);
+                                const shorts = filteredTrades.filter(t => t.side === TradeSide.SHORT);
+
+                                const avgLongDur = getAvgDuration(longs);
+                                const avgShortDur = getAvgDuration(shorts);
+
+                                const max = Math.max(avgLongDur, avgShortDur, 1) * 1.2;
+
+                                return (
+                                    <div className="space-y-6 w-full">
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Longs</span>
+                                                <span className="text-white font-mono">{formatDuration(avgLongDur)}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-blue-500" style={{ width: `${(avgLongDur / max) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <div className="flex justify-between text-xs mb-2 font-bold">
+                                                <span className="text-slate-500">Shorts</span>
+                                                <span className="text-white font-mono">{formatDuration(avgShortDur)}</span>
+                                            </div>
+                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-500" style={{ width: `${(avgShortDur / max) * 100}%` }}></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })()}
                         </div>
                     </div>
                 </div>

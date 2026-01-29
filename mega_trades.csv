@@ -1,0 +1,16 @@
+Symbol,Side,Entry Date,Exit Date,Entry Price,Exit Price,Quantity,PnL,Strategy,Setups,Tags,Notes,Quality,Fee
+BTCUSDT,LONG,2020-01-01 10:00 UTC,2020-01-05 14:00 UTC,7200,8500,1,1300,Trend Following,Breakout|Golden Cross,Start of Bull Run|FOMO,First trade of the decade!,5,50
+ETHUSDT,SHORT,2021-05-12 09:30 UTC,2021-05-12 09:45 UTC,4000,3950,5,250,Reversal,Double Top,Disciplined|Calm,Quick scalp on ATH rejection,4,20
+SOLUSDT,LONG,2022-11-08 14:00 UTC,2022-11-09 08:00 UTC,30,15,50,-750,Breakout,Support Bounce,Revenge|Tilted,FTX crash... bad entry and didn't cut loss,1,10
+XAUUSD,LONG,2024-03-01 08:00 UTC,2024-03-15 16:00 UTC,2050,2180,10,1300,Trend Following,Flag|Trendline,Disciplined|Patient,Great gold run held for weeks,5,0
+EURUSD,SHORT,2025-01-10 13:00 UTC,2025-01-10 15:30 UTC,1.0850,1.0820,100000,300,Mean Reversion,News Fade,Calm,CPI news fade execution,4,5
+TSLA,LONG,2025-01-20 09:30 UTC,2025-01-20 16:00 UTC,220,225,100,500,Momentum,Gap Up,FOMO|Aggressive,Earnings gap play,3,2
+USOIL,SHORT,2024-06-01 12:00 UTC,2024-06-01 18:00 UTC,80.50,79.20,100,130,Breakout,Head & Shoulders,Disciplined,Oil inventory data,4,15
+NVDA,LONG,2023-05-24 09:30 UTC,2023-05-30 16:00 UTC,300,380,50,4000,Trend Following,Squeeze|Earnings,Excited|Greedy,AI boom swing trade,5,10
+GBPUSD,LONG,2019-12-12 22:00 UTC,2019-12-13 10:00 UTC,1.3100,1.3400,20000,600,News Trading,Election,Nervous|Lucky,Brexit election gamble (very old data),3,0
+DOGE,SHORT,2021-05-08 23:30 UTC,2021-05-09 00:30 UTC,0.70,0.50,10000,2000,Reversal,News Fade,Euphoric|Disciplined,SNL Top Short,5,50
+AAPL,LONG,2024-09-10 10:00 UTC,2024-09-10 10:15 UTC,175.50,175.20,200,-60,Scalping,Opening Range,Bored|Impulsive,Failed breakout scalp,2,1
+BTCUSDT,SHORT,2022-06-18 04:00 UTC,2022-06-18 12:00 UTC,20000,18500,2,3000,Breakout,Bear Flag,Disciplined|Flow,Cascading liquidation catch,5,40
+SPX500,LONG,2023-11-01 14:00 UTC,2023-12-20 16:00 UTC,4200,4700,5,2500,Trend Following,Seasonality|Santa Rally,Patient|Confident,End of year buy and hold,5,0
+AUDJPY,SHORT,2025-02-15 03:00 UTC,2025-02-15 11:00 UTC,95.50,94.80,50000,350,Mean Reversion,RSI Divergence,Calm,Asian session fade,4,8
+BNB,LONG,2021-02-01 00:00 UTC,2021-05-01 00:00 UTC,50,600,100,55000,Investing,Fundamental,Diamond Hands,The great BSC run (Long duration),5,100

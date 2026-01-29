@@ -24,7 +24,7 @@ export const useStrategies = () => {
                 description: s.description,
                 version: s.version,
                 status: s.status,
-                stats: s.stats || { totalTrades: 0, winRate: 0, avgRR: 0, netRoi: 0, totalPnl: 0 },
+                stats: s.stats || { totalTrades: 0, winRate: 0, profitFactor: 0, netRoi: 0, totalPnl: 0 },
                 setups: s.setups || [],
                 sizingRules: s.sizing_rules || [],
                 riskParams: s.risk_params || { maxRiskPerTrade: 1, minRR: 2 },
@@ -42,7 +42,7 @@ export const useStrategies = () => {
     const addStrategy = async (strategy: Strategy) => {
         if (!user) return;
 
-        const payload = {
+        const payload: any = {
             user_id: user.id,
             name: strategy.name,
             description: strategy.description,
@@ -55,6 +55,11 @@ export const useStrategies = () => {
             entry_rules: strategy.entryRules,
             exit_rules: strategy.exitRules
         };
+
+        // Attempt to preserve ID if it looks like a UUID or valid ID, especially for restores
+        if (strategy.id && strategy.id.length > 10) {
+            payload.id = strategy.id;
+        }
 
         const { data, error } = await supabase.from('strategies').insert([payload]).select().single();
         if (error) {

@@ -341,6 +341,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
             mentalState: mentalStates,
             tags: generalTags,
             setups: selectedSetups,
+            entryChecklist: checkedRules,
             riskReward: calculateRR(),
         };
 
@@ -546,8 +547,8 @@ const TradeForm: React.FC<TradeFormProps> = ({
     };
 
     const activeStrategies = strategies.filter(s => s.status === 'active');
-    const selectedStrategyObj = activeStrategies.find(s => s.name === formData.strategy);
-    const allMandatoryChecked = !selectedStrategyObj || (selectedStrategyObj.entryRules?.primary || []).every(r => checkedRules.includes(r));
+    const selectedStrategyObj = activeStrategies.find(s => s.id === formData.strategyId);
+    const allMandatoryChecked = !selectedStrategyObj || entryMode === 'PAST' || (selectedStrategyObj.entryRules?.primary || []).every(r => checkedRules.includes(r));
     const isExitValid = entryMode === 'LIVE' || (formData.exitPrice && formData.exitDate);
     const shouldBlockEntry = entryMode === 'LIVE' && effectiveRiskState.isLocked;
 
@@ -858,7 +859,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
                         </div>
 
                         {/* Strategy Validation Section */}
-                        {selectedStrategyObj && (
+                        {selectedStrategyObj && entryMode !== 'PAST' && (
                             <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/5 p-5 space-y-4 animate-in fade-in slide-in-from-top-2">
                                 <div className="flex items-center gap-2 mb-2">
                                     <i className="fa-solid fa-clipboard-check text-indigo-400"></i>

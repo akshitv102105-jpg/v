@@ -50,7 +50,7 @@ const Settings: React.FC<SettingsProps> = ({
         const findCol = (keywords: string[]) => headers.findIndex(h => keywords.some(k => h === k || h.includes(k)));
 
         const dateIdx = findCol(['time', 'date', 'created', 'timestamp', 'datetime']);
-        const symbolIdx = findCol(['contract', 'symbol', 'pair', 'instrument', 'ticker', 'market']);
+        const symbolIdx = findCol(['contract', 'symbol', 'pair', 'instrument', 'ticker', 'market', 'currency pair', 'item']);
         const sideIdx = findCol(['side', 'type', 'direction', 'action']);
         const priceIdx = findCol(['exec.price', 'price', 'avg', 'entry', 'fill', 'avg price']);
         const qtyIdx = findCol(['qty', 'quantity', 'amount', 'size', 'volume', 'executed']);

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import './Guruji.css';
-import { Trade, Strategy, ProfitGoals, RiskSettings, TradeStatus, Achievement } from '../types';
+import { Trade, Strategy, ProfitGoals, RiskSettings, TradeStatus, Achievement, Habit } from '../types';
 
 interface GurujiProps {
     trades: Trade[];
@@ -10,6 +10,11 @@ interface GurujiProps {
     userProfile: { name: string; balance: number };
     initialContext?: any;
     achievements?: Achievement[];
+    habits?: Habit[];
+    completions?: Record<string, boolean>;
+    onAddStrategy?: (strategy: Strategy) => Promise<void>;
+    onAddHabit?: (name: string, frequency: string) => Promise<void>;
+    onAddTag?: (category: string, name: string) => void;
 }
 
 interface Message {
@@ -42,13 +47,22 @@ Guidelines:
 7. When analyzing trade data, be specific with numbers and patterns
 8. Track the user's progress on "Guruji's Challenges" (achievements) and offer guidance on how to master them.
 9. End important advice with an inspiring quote or wisdom
+10. You have the power to create strategies, habits, and tags for the user. When a user agrees to a suggestion or you want to proactively help them organize, use the following hidden command syntax at the end of your message:
+    - Create Strategy: [COMMAND: CREATE_STRATEGY, NAME: "Name", DESC: "Description", ENTRY_PRIMARY: ["Rule 1", "Rule 2"], EXIT_PRIMARY: ["Rule 3"]]
+    - Create Habit: [COMMAND: CREATE_HABIT, NAME: "Habit Name", FREQ: "Daily"]
+    - Create Tag: [COMMAND: CREATE_TAG, NAME: "Tag Name", CAT: "entry|exit|mental|general"]
 
 Remember: You are a mentor, not a financial advisor. Always remind users that trading involves risk and they should do their own research.`;
 
-const Guruji: React.FC<GurujiProps> = ({ trades, strategies, profitGoals, riskSettings, userProfile, initialContext, achievements = [] }) => {
+const Guruji: React.FC<GurujiProps> = ({
+    trades, strategies, profitGoals, riskSettings, userProfile, initialContext,
+    achievements = [], habits = [], completions = {},
+    onAddStrategy, onAddHabit, onAddTag
+}) => {
     const [messages, setMessages] = useState<Message[]>([]);
     const [inputValue, setInputValue] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+    const [apiKey, setApiKey] = useState(localStorage.getItem('guruji_api_key') || OPENROUTER_API_KEY);
     const messagesEndRef = useRef<HTMLDivElement>(null);
 
     // Initial Welcome Message
@@ -143,7 +157,7 @@ Analyze this data in a **cold, strictly disciplined** manner. Do not sugarcoat f
             fetch(OPENROUTER_API_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -157,10 +171,13 @@ Analyze this data in a **cold, strictly disciplined** manner. Do not sugarcoat f
                     if (!res.ok) throw new Error(`API Error: ${res.status}`);
                     return res.json();
                 })
-                .then(data => {
+                .then(async data => {
                     const aiContent = data.choices?.[0]?.message?.content || "I apologize, but I couldn't generate a response at this time.";
                     const aiMsg: Message = { role: 'assistant', content: aiContent, timestamp: new Date() };
                     setMessages(prev => [...prev, aiMsg]);
+
+                    // Process any commands from the AI
+                    await processCommands(aiContent);
                 })
                 .catch(err => {
                     console.error('Guru analysis error:', err);
@@ -200,6 +217,59 @@ Ask me to analyze your trades, review your performance, or seek guidance on your
         };
     };
 
+    const processCommands = async (content: string) => {
+        // Regex for different commands
+        const strategyRegex = /\[COMMAND: CREATE_STRATEGY, NAME: "(.*?)", DESC: "(.*?)", ENTRY_PRIMARY: \[(.*?)\], EXIT_PRIMARY: \[(.*?)\]\]/g;
+        const habitRegex = /\[COMMAND: CREATE_HABIT, NAME: "(.*?)", FREQ: "(.*?)"\]/g;
+        const tagRegex = /\[COMMAND: CREATE_TAG, NAME: "(.*?)", CAT: "(.*?)"\]/g;
+
+        let match;
+
+        // Process Strategy Commands
+        while ((match = strategyRegex.exec(content)) !== null) {
+            if (onAddStrategy) {
+                const [_, name, desc, entryRulesStr, exitRulesStr] = match;
+                const entryRules = entryRulesStr.split(',').map(r => r.trim().replace(/^"(.*)"$/, '$1'));
+                const exitRules = exitRulesStr.split(',').map(r => r.trim().replace(/^"(.*)"$/, '$1'));
+
+                const newStrategy: Strategy = {
+                    id: crypto.randomUUID(),
+                    name,
+                    description: desc,
+                    entryRules: { primary: entryRules, secondary: [] },
+                    exitRules: { primary: exitRules, secondary: [] },
+                    status: 'active',
+                    version: 1,
+                    setups: [],
+                    sizingRules: [],
+                    riskParams: { maxRiskPerTrade: 1, minRR: 2, dailyMaxDD: 3 },
+                    stats: { totalTrades: 0, winRate: 0, avgRR: 0, netRoi: 0, totalPnl: 0 }
+                };
+                await onAddStrategy(newStrategy);
+                console.log(`Guruji created strategy: ${name}`);
+            }
+        }
+
+        // Process Habit Commands
+        strategyRegex.lastIndex = 0; // Reset just in case
+        while ((match = habitRegex.exec(content)) !== null) {
+            if (onAddHabit) {
+                const [_, name, freq] = match;
+                await onAddHabit(name, freq);
+                console.log(`Guruji created habit: ${name}`);
+            }
+        }
+
+        // Process Tag Commands
+        while ((match = tagRegex.exec(content)) !== null) {
+            if (onAddTag) {
+                const [_, name, cat] = match;
+                onAddTag(cat, name);
+                console.log(`Guruji created tag: ${name} (${cat})`);
+            }
+        }
+    };
+
     const formatTradingContext = () => {
         // Calculate key metrics
         const portfolioTrades = trades; // Removed 'DATA' filter as type is incompatible
@@ -232,6 +302,28 @@ Ask me to analyze your trades, review your performance, or seek guidance on your
                 .join('\n')
             : '';
 
+        // Habit Context Calculation
+        let habitContext = "";
+        if (habits.length > 0) {
+            const today = new Date();
+            const last7DaysStrings: string[] = [];
+            for (let i = 0; i < 7; i++) {
+                const d = new Date();
+                d.setDate(today.getDate() - i);
+                last7DaysStrings.push(d.toISOString().split('T')[0]);
+            }
+
+            habitContext = "\n🧘 HABIT ADHERENCE (Last 7 Days):\n";
+            habits.forEach(h => {
+                let completedCount = 0;
+                last7DaysStrings.forEach(dateStr => {
+                    if (completions[`${h.id}_${dateStr}`]) completedCount++;
+                });
+                const rate = Math.round((completedCount / 7) * 100);
+                habitContext += `- ${h.name}: ${rate}% (${completedCount}/7 days) | Current Streak: ${h.streak} 🔥\n`;
+            });
+        }
+
         return `
 --- TRADER'S CURRENT DATA ---
 
@@ -244,6 +336,7 @@ Ask me to analyze your trades, review your performance, or seek guidance on your
 - Profit Factor: ${profitFactor}
 - Open Positions: ${openTrades.length}
 ${achievementContext}
+${habitContext}
 
 🎯 GOALS & LIMITS:
 - Daily Target: ${profitGoals.daily?.target || 0}%
@@ -281,7 +374,7 @@ ${recentTrades}
             const response = await fetch(OPENROUTER_API_URL, {
                 method: 'POST',
                 headers: {
-                    'Authorization': `Bearer ${OPENROUTER_API_KEY}`,
+                    'Authorization': `Bearer ${apiKey}`,
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
@@ -309,6 +402,9 @@ ${recentTrades}
 
             const aiMsg: Message = { role: 'assistant', content: aiContent, timestamp: new Date() };
             setMessages(prev => [...prev, aiMsg]);
+
+            // Process any commands from the AI
+            await processCommands(aiContent);
 
         } catch (error) {
             console.error(error);
@@ -430,6 +526,17 @@ ${recentTrades}
                 </div>
 
                 <div className="sidebar-footer">
+                    <button className="clear-chat-btn" onClick={() => {
+                        const newKey = prompt('Enter your OpenRouter API Key:', apiKey);
+                        if (newKey) {
+                            setApiKey(newKey);
+                            localStorage.setItem('guruji_api_key', newKey);
+                            alert('API Key updated successfully!');
+                        }
+                    }} style={{ marginBottom: '10px' }}>
+                        <i className="fa-solid fa-key"></i>
+                        Set API Key
+                    </button>
                     <button className="clear-chat-btn" onClick={clearChat}>
                         <i className="fa-solid fa-trash-can"></i>
                         Clear Chat

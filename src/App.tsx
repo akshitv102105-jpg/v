@@ -14,7 +14,8 @@ import Achievements from './components/Achievements';
 import Profile from './components/Profile';
 import DataLab from './components/DataLab'; // Imported DataLab
 import { toast } from './components/Toast';
-import { useAuth } from './contexts/AuthContext';
+import { UndoProvider, useUndo } from './contexts/UndoContext';
+import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { useTrades } from './hooks/useTrades';
 import { useProfile } from './hooks/useProfile';
 import { useStrategies } from './hooks/useStrategies';
@@ -23,7 +24,7 @@ import { useJournals } from './hooks/useJournals';
 import { useAccounts } from './hooks/useAccounts';
 import { useTransactions } from './hooks/useTransactions';
 import { useAchievements } from './hooks/useAchievements';
-import { Trade, View, UserProfile, Tag, ProfitGoals, RiskSettings, FocusTask, Transaction, Account, TradeStatus, TradeSide, DateFilterState, Strategy } from './types';
+import { Trade, View, UserProfile, Tag, ProfitGoals, RiskSettings, FocusTask, Transaction, Account, TradeStatus, TradeSide, DateFilterState, Strategy, TAG_COLORS } from './types';
 
 // --- Trader Levels ---
 const TRADER_LEVELS = [
@@ -47,23 +48,26 @@ const getTraderLevel = (pf: number, dd: number, rr: number, tradeCount: number) 
 
 const AppContent: React.FC = () => {
   // Hooks
-  const { trades, addTrade, updateTrade, deleteTrade, importTrades, clearAllTrades, clearImportedTrades } = useTrades();
+  const { trades, addTrade, updateTrade, deleteTrade, deleteTrades, importTrades, clearAllTrades, clearImportedTrades } = useTrades();
   const { profile, updateProfile } = useProfile();
   const { strategies, addStrategy, updateStrategy, deleteStrategy } = useStrategies();
-  const { habits, completions, toggleHabit } = useHabits();
+  const { habits, completions, toggleHabit, addHabit, deleteHabit } = useHabits();
+
   const { entries: journalEntries, addEntry } = useJournals();
   const { accounts, addAccount, updateAccount, deleteAccount } = useAccounts();
   const { transactions, addTransaction, deleteTransaction } = useTransactions();
   const { achievements, generateForMonth, updateProgress } = useAchievements();
+  const { showUndo, confirmDelete } = useUndo();
 
   // Local State (UI only)
   const [activeView, setActiveView] = useState<View>('dashboard');
   const [showTradeForm, setShowTradeForm] = useState(false);
   const [activeAccountId, setActiveAccountId] = useState<string>('main');
   const [playbookTab, setPlaybookTab] = useState('strategies');
+  const [gurujiContext, setGurujiContext] = useState<any>(null);
+
   const [analyticsFilter, setAnalyticsFilter] = useState<DateFilterState>({ type: 'LIFETIME' });
 
-  // ... (keeping other states) ...
   const [availableTags, setAvailableTags] = useState<Record<string, Tag[]>>(() => {
     const saved = localStorage.getItem('vyuha_tags');
     return saved ? JSON.parse(saved) : {
@@ -99,6 +103,23 @@ const AppContent: React.FC = () => {
     const saved = localStorage.getItem('vyuha_tasks');
     return saved ? JSON.parse(saved) : [];
   });
+
+  // --- Persistence Effects ---
+  useEffect(() => {
+    localStorage.setItem('vyuha_tags', JSON.stringify(availableTags));
+  }, [availableTags]);
+
+  useEffect(() => {
+    localStorage.setItem('vyuha_goals', JSON.stringify(profitGoals));
+  }, [profitGoals]);
+
+  useEffect(() => {
+    localStorage.setItem('vyuha_risk', JSON.stringify(riskSettings));
+  }, [riskSettings]);
+
+  useEffect(() => {
+    localStorage.setItem('vyuha_tasks', JSON.stringify(focusTasks));
+  }, [focusTasks]);
 
   // Derived Profile State (Defaults)
   const activeProfile: UserProfile = profile || {
@@ -220,11 +241,44 @@ const AppContent: React.FC = () => {
     updateAccount(account.id, account);
   };
 
+  // --- Task Handlers ---
+  const handleToggleFocusTask = (id: string) => {
+    setFocusTasks(prev => prev.map(t => t.id === id ? { ...t, completed: !t.completed } : t));
+  };
+
+  const handleDeleteFocusTask = (id: string) => {
+    setFocusTasks(prev => prev.filter(t => t.id !== id));
+  };
+
+  // --- Global Tag Handler ---
+  const handleAddGlobalTag = (category: string, name: string) => {
+    setAvailableTags(prev => {
+      const existing = prev[category] || [];
+      if (existing.some(t => t.name === name)) return prev;
+
+      // Auto-assign color based on category
+      let color = 'slate';
+      if (category === 'entry') color = 'purple';
+      if (category === 'exit') color = 'rose';
+      if (category === 'mental') color = 'amber';
+      if (category === 'general') color = 'blue';
+
+      const newTag: Tag = {
+        id: Date.now().toString(),
+        name,
+        color,
+        category
+      };
+
+      return { ...prev, [category]: [...existing, newTag] };
+    });
+  };
+
   return (
     <div className="min-h-screen bg-[#0B0E14] text-slate-300 selection:bg-indigo-500/30">
       <Navbar
         activeView={activeView}
-        onViewChange={setActiveView}
+        onViewChange={(view) => { setActiveView(view); if (view !== 'guru-ji') setGurujiContext(null); }}
         userProfile={activeProfile}
         rank={currentRank}
         tradeStats={{ current: trades.filter(t => t.status === 'CLOSED').length, nextTarget: 100 }}
@@ -249,8 +303,8 @@ const AppContent: React.FC = () => {
             onToggleHabit={toggleHabit}
             focusTasks={focusTasks}
             onAddFocusTask={(task) => setFocusTasks([...focusTasks, task])}
-            onToggleFocusTask={(id) => { }}
-            onDeleteFocusTask={(id) => { }}
+            onToggleFocusTask={handleToggleFocusTask}
+            onDeleteFocusTask={handleDeleteFocusTask}
             userFees={activeProfile.fees}
             nickname={activeProfile.nickname}
             enableAnimations={activeProfile.preferences?.enableAnimations ?? true}
@@ -267,13 +321,29 @@ const AppContent: React.FC = () => {
             onUpdateProfile={updateProfile}
             habitCompletions={completions}
             exchanges={['Binance', 'Bybit', 'Coinbase']}
+            rank={currentRank}
           />
         )}
 
         {activeView === 'playbook' && (
           <Playbook
             strategies={strategies}
-            onSaveStrategies={(newStrats: Strategy[]) => { /* Logic to handle bulk save or map to individual adds/updates */ }}
+            trades={trades}
+            onSaveStrategies={async (newStrats: Strategy[]) => {
+              // Only handle additions and updates (Deletions are handled by onDeleteStrategy)
+              for (const s of newStrats) {
+                const existing = strategies.find(old => old.id === s.id);
+                if (!existing) {
+                  // This is a new strategy
+                  await addStrategy(s);
+                } else {
+                  // This is an update
+                  await updateStrategy(s.id, s);
+                }
+              }
+            }}
+            onDeleteStrategy={deleteStrategy}
+            onRestoreStrategy={addStrategy}
             tags={availableTags}
             onTagsChange={setAvailableTags}
             profitGoals={profitGoals}
@@ -290,16 +360,21 @@ const AppContent: React.FC = () => {
             trades={visibleTrades}
             entries={journalEntries}
             onSaveEntry={addEntry}
-            onViewAnalytics={(date) => setActiveView('analytics')}
+            onViewAnalytics={(date) => {
+              // Future: Pass date filter to analytics
+              setAnalyticsFilter({ type: 'ABSOLUTE', range: { start: date, end: date } });
+              setActiveView('analytics');
+            }}
           />
         )}
 
         {activeView === 'habit-tracker' && (
           <HabitTracker
             habits={habits}
-            setHabits={() => { }} // handled by hook
             completions={completions}
-            setCompletions={() => { }} // handled by hook
+            onToggleHabit={toggleHabit}
+            onAddHabit={addHabit}
+            onDeleteHabit={deleteHabit}
           />
         )}
 
@@ -307,9 +382,17 @@ const AppContent: React.FC = () => {
           <Analytics
             trades={trades}
             strategies={strategies}
+            tags={availableTags}
             filter={analyticsFilter}
             onFilterChange={setAnalyticsFilter}
             baseCurrency='USD'
+            onDeleteTrades={deleteTrades}
+            onRestoreTrades={importTrades}
+            onImportTrades={importTrades} // Added missing prop
+            onSeekWisdom={(data) => {
+              setGurujiContext(data);
+              setActiveView('guru-ji');
+            }}
           />
         )}
 
@@ -340,10 +423,11 @@ const AppContent: React.FC = () => {
           <DataLab
             trades={trades}
             onSeekWisdom={(data) => {
-              console.log("Seeking Wisdom", data);
+              setGurujiContext(data);
               setActiveView('guru-ji');
             }}
             onDeleteTrade={deleteTrade}
+            onRestoreTrade={addTrade} // Added for undo support
           />
         )}
 
@@ -355,6 +439,12 @@ const AppContent: React.FC = () => {
             profitGoals={profitGoals}
             riskSettings={riskSettings}
             achievements={achievements}
+            habits={habits}
+            completions={completions}
+            initialContext={gurujiContext}
+            onAddStrategy={addStrategy}
+            onAddHabit={addHabit}
+            onAddTag={handleAddGlobalTag}
           />
         )}
 
@@ -365,16 +455,23 @@ const AppContent: React.FC = () => {
             trades={trades}
             onImportTrades={importTrades}
             onClearTrades={() => {
-              if (confirm('Are you sure you want to delete ALL trades? This cannot be undone.')) {
+              confirmDelete('Are you sure you want to delete ALL trades? This cannot be undone.', () => {
+                const tradesToRestore = [...trades];
                 clearAllTrades();
+                showUndo(`${tradesToRestore.length} trades deleted.`, () => {
+                  importTrades(tradesToRestore);
+                });
                 toast.show('All trades cleared successfully.', 'error');
-              }
+              });
             }}
             onClearImportedTrades={() => {
-              if (confirm('Are you sure you want to delete all IMPORTED trades?')) {
+              confirmDelete('Are you sure you want to delete all IMPORTED trades?', () => {
+                const importedTrades = trades.filter(t => t.tradeType === 'PAST');
                 clearImportedTrades();
-                toast.show('Imported trades cleared successfully.', 'success');
-              }
+                showUndo(`${importedTrades.length} imported trades deleted.`, () => {
+                  importTrades(importedTrades);
+                });
+              });
             }}
           />
         )}
@@ -386,7 +483,7 @@ const AppContent: React.FC = () => {
           onSave={handleAddTrade}
           strategies={strategies}
           availableTags={availableTags}
-          onAddGlobalTag={(cat, name) => { }} // Implement
+          onAddGlobalTag={handleAddGlobalTag}
           portfolioBalance={portfolioBalance}
           userFees={activeProfile.fees}
         />
@@ -410,7 +507,11 @@ const App: React.FC = () => {
     return <Auth />;
   }
 
-  return <AppContent />;
+  return (
+    <UndoProvider>
+      <AppContent />
+    </UndoProvider>
+  );
 };
 
 export default App;

@@ -49,13 +49,17 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // --- Journal Streak Logic ---
     const journalHabit = habits.find(h => h.name.toLowerCase().includes('journal'));
-    const displayHabits = habits.filter(h => !h.name.toLowerCase().includes('journal'));
+    const displayHabits = habits; // Show all habits for sync parity
 
     const journalStreak = useMemo(() => {
         if (!journalHabit) return 0;
         let streak = 0;
         let checkDate = new Date();
-        const todayStr = checkDate.toISOString().split('T')[0];
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = String(now.getMonth() + 1).padStart(2, '0');
+        const day = String(now.getDate()).padStart(2, '0');
+        const todayStr = `${year}-${month}-${day}`;
 
         // If not done today, start check from yesterday
         if (!habitCompletions[`${journalHabit.id}_${todayStr}`]) {
@@ -63,7 +67,11 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
 
         while (true) {
-            const dStr = checkDate.toISOString().split('T')[0];
+            const y = checkDate.getFullYear();
+            const m = String(checkDate.getMonth() + 1).padStart(2, '0');
+            const d = String(checkDate.getDate()).padStart(2, '0');
+            const dStr = `${y}-${m}-${d}`;
+
             if (habitCompletions[`${journalHabit.id}_${dStr}`]) {
                 streak++;
                 checkDate.setDate(checkDate.getDate() - 1);
@@ -178,6 +186,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 exitQuality: exitForm.quality > 0 ? exitForm.quality : undefined,
                 mentalState: [...(selectedExitTrade.mentalState || []), ...exitForm.mental],
                 tags: [...(selectedExitTrade.tags || []), ...exitForm.general],
+                exitChecklist: exitForm.checklist,
                 notes: selectedExitTrade.notes + (exitForm.notes ? `\n\n[EXIT]: ${exitForm.notes}` : '') + (exitForm.checklist.length > 0 ? `\n[CHECKLIST]: ${exitForm.checklist.join(', ')}` : ''),
             };
 
@@ -439,11 +448,24 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8 h-full">
                         <div>
                             <div className="flex items-center gap-2 mb-4">
-                                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Daily Habits <span className="ml-1 bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[10px]">{Object.keys(habitCompletions).filter(k => k.includes(new Date().toISOString().split('T')[0]) && displayHabits.some(h => k.startsWith(h.id))).length}/{displayHabits.length}</span></span>
+                                {(() => {
+                                    const now = new Date();
+                                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+                                    const doneCount = displayHabits.filter(h => habitCompletions[`${h.id}_${todayStr}`]).length;
+                                    return (
+                                        <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                                            Daily Habits
+                                            <span className="ml-1 bg-slate-800 text-slate-300 px-1.5 py-0.5 rounded text-[10px]">
+                                                {doneCount}/{displayHabits.length}
+                                            </span>
+                                        </span>
+                                    );
+                                })()}
                             </div>
                             <div className="space-y-3">
                                 {displayHabits.map(habit => {
-                                    const todayStr = new Date().toISOString().split('T')[0];
+                                    const now = new Date();
+                                    const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
                                     const isDone = habitCompletions[`${habit.id}_${todayStr}`];
 
                                     // Calc Streak
@@ -599,7 +621,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                         <div>
                                             <h4 className="text-sm font-bold text-white">{trade.symbol}</h4>
-                                            <p className="text-[10px] text-slate-500">{new Date(trade.entryDate).toLocaleString()}</p>
+                                            <div className="flex flex-col">
+                                                <p className="text-[10px] text-slate-500">{new Date(trade.entryDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}</p>
+                                                <p className="text-[10px] text-slate-600 font-mono">{new Date(trade.entryDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</p>
+                                            </div>
                                         </div>
                                     </div>
                                     <div className="hidden md:block text-center">
@@ -892,8 +917,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <button onClick={() => setShowExitModal(false)} className="px-6 py-2.5 rounded-lg border border-slate-700 text-slate-300 font-bold text-sm hover:text-white hover:bg-slate-800 transition-colors">Cancel</button>
                             <button
                                 onClick={handleConfirmExit}
-                                disabled={!exitForm.price || (!!activeStrategyObj && activeStrategyObj.exitRules.primary.length > 0 && !activeStrategyObj.exitRules.primary.some(r => exitForm.checklist.includes(r)))}
-                                title={(!exitForm.price ? "Enter exit price" : (!!activeStrategyObj && activeStrategyObj.exitRules.primary.length > 0 && !activeStrategyObj.exitRules.primary.some(r => exitForm.checklist.includes(r))) ? "Select at least one primary exit rule" : "Confirm Exit")}
+                                disabled={!exitForm.price || (!!activeStrategyObj && (activeStrategyObj.exitRules.primary || []).length > 0 && !(activeStrategyObj.exitRules.primary || []).every(r => exitForm.checklist.includes(r)))}
+                                title={(!exitForm.price ? "Enter exit price" : (!!activeStrategyObj && (activeStrategyObj.exitRules.primary || []).length > 0 && !(activeStrategyObj.exitRules.primary || []).every(r => exitForm.checklist.includes(r))) ? "Complete all mandatory exit rules" : "Confirm Exit")}
                                 className="px-8 py-2.5 rounded-lg bg-rose-600 text-white font-bold text-sm shadow-lg hover:bg-rose-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center gap-2"
                             >
                                 <i className="fa-solid fa-check"></i> Confirm Exit

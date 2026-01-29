@@ -172,11 +172,43 @@ const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({ trade, onClose, b
                         <div>
                             <h4 className="text-sm font-bold text-white mb-3">Setups & Rules</h4>
                             <div className="flex flex-wrap gap-2">
-                                {trade.setups && trade.setups.length > 0 ? trade.setups.map((s, i) => (
+                                {trade.strategy && (
+                                    <span className="w-full px-2.5 py-1 rounded bg-indigo-500/20 border border-indigo-500/30 text-xs text-indigo-400 font-bold mb-1">
+                                        Strategy: {trade.strategy}
+                                    </span>
+                                )}
+                                {trade.setups && trade.setups.length > 0 && trade.setups.map((s, i) => (
                                     <span key={i} className="px-2.5 py-1 rounded bg-[#1E2330] border border-slate-700 text-xs text-slate-300">
                                         {s}
                                     </span>
-                                )) : <span className="text-xs text-slate-600 italic">No setups recorded</span>}
+                                ))}
+                                {trade.entryChecklist && trade.entryChecklist.length > 0 && (
+                                    <div className="w-full mt-2 space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Entry Checklist</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {trade.entryChecklist.map((c, i) => (
+                                                <span key={i} className="px-2 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/20 text-[10px] text-emerald-400">
+                                                    <i className="fa-solid fa-check mr-1"></i> {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {trade.exitChecklist && trade.exitChecklist.length > 0 && (
+                                    <div className="w-full mt-2 space-y-1">
+                                        <p className="text-[10px] font-bold text-slate-500 uppercase">Exit Checklist</p>
+                                        <div className="flex flex-wrap gap-1">
+                                            {trade.exitChecklist.map((c, i) => (
+                                                <span key={i} className="px-2 py-0.5 rounded bg-rose-500/10 border border-rose-500/20 text-[10px] text-rose-400">
+                                                    <i className="fa-solid fa-check mr-1"></i> {c}
+                                                </span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                                {(!trade.setups?.length && !trade.entryChecklist?.length && !trade.exitChecklist?.length) && (
+                                    <span className="text-xs text-slate-600 italic">No rules recorded</span>
+                                )}
                             </div>
                         </div>
                         <div>

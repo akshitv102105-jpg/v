@@ -162,6 +162,16 @@ export const useTrades = () => {
         setTrades(prev => prev.filter(t => t.id !== id));
     };
 
+    const deleteTrades = async (ids: string[]) => {
+        if (!user || ids.length === 0) return;
+        const { error } = await supabase.from('trades').delete().in('id', ids);
+        if (error) {
+            console.error('Error deleting multiple trades:', error);
+            return;
+        }
+        setTrades(prev => prev.filter(t => !ids.includes(t.id)));
+    };
+
     const importTrades = async (newTrades: Trade[]) => {
         if (!user || newTrades.length === 0) return;
 
@@ -268,5 +278,5 @@ export const useTrades = () => {
         setTrades(prev => prev.filter(t => t.tradeType !== 'PAST'));
     };
 
-    return { trades, loading, addTrade, updateTrade, deleteTrade, importTrades, clearAllTrades, clearImportedTrades };
+    return { trades, loading, addTrade, updateTrade, deleteTrade, deleteTrades, importTrades, clearAllTrades, clearImportedTrades };
 };

@@ -10,6 +10,7 @@ interface ProfileProps {
     onUpdateExchanges?: (exchanges: string[]) => void;
     onEditFees?: () => void;
     habitCompletions?: HabitCompletions;
+    rank?: { name: string; color: string; desc: string; };
 }
 
 const TRADER_LEVELS = [
@@ -38,7 +39,8 @@ const Profile: React.FC<ProfileProps> = ({
     exchanges = ['Binance', 'Bybit'],
     onUpdateExchanges,
     onEditFees,
-    habitCompletions = {}
+    habitCompletions = {},
+    rank: propsRank
 }) => {
     // --- State ---
     const [isEditing, setIsEditing] = useState(false);
@@ -168,7 +170,13 @@ const Profile: React.FC<ProfileProps> = ({
     // Score: 0% DD = 100 Score. 20% DD = 80 Score. >100% DD = 0 Score.
     const ddScore = Math.max(0, 100 - maxDDPct);
 
-    const currentLevel = useMemo(() => getTraderLevel(profitFactor, maxDDPct, realizedRR), [profitFactor, maxDDPct, realizedRR]);
+    // --- Level Logic ---
+    // If rank is passed from parent, use it. Otherwise calculate locally (legacy fallback)
+    const currentLevel = useMemo(() => {
+        if (propsRank) return propsRank;
+
+        return getTraderLevel(profitFactor, maxDDPct, realizedRR);
+    }, [propsRank, profitFactor, maxDDPct, realizedRR]);
 
     // Stats Definitions (Exact User Request)
     const statsData = [

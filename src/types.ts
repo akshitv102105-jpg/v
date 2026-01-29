@@ -78,7 +78,7 @@ export interface Strategy {
     stats: {
         totalTrades: number;
         winRate: number;
-        avgRR: number;
+        profitFactor: number;
         netRoi: number;
         totalPnl: number;
     };
@@ -128,6 +128,8 @@ export interface Trade {
     entryReasons?: string[];
     mentalState?: string[];
     tags?: string[];
+    entryChecklist?: string[];
+    exitChecklist?: string[];
 
     exitReasons?: string[];
     exitQuality?: number; // 1-5 stars

@@ -1,12 +1,16 @@
 
-import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { Strategy, Tag, TAG_COLORS, ProfitGoals, RiskSettings } from '../types';
+import React, { useState, useMemo, useEffect } from 'react';
+import { useUndo } from '../contexts/UndoContext';
+import { Strategy, Trade, Tag, TAG_COLORS, ProfitGoals, RiskSettings } from '../types';
 
 interface PlaybookProps {
     strategies: Strategy[];
+    trades: Trade[];
     onSaveStrategies: (strategies: Strategy[]) => void;
+    onDeleteStrategy: (id: string) => void;
+    onRestoreStrategy: (strategy: Strategy) => void;
     tags: Record<string, Tag[]>;
-    onTagsChange: (tags: Record<string, Tag[]>) => void;
+    onTagsChange: React.Dispatch<React.SetStateAction<Record<string, Tag[]>>>;
     profitGoals: ProfitGoals;
     onUpdateGoals: (goals: ProfitGoals) => void;
     riskSettings: RiskSettings;
@@ -16,7 +20,8 @@ interface PlaybookProps {
 }
 
 const Playbook: React.FC<PlaybookProps> = ({
-    strategies, onSaveStrategies, tags: tagList, onTagsChange: setTagList,
+    strategies, trades, onSaveStrategies, onDeleteStrategy, onRestoreStrategy,
+    tags: tagList, onTagsChange: setTagList,
     profitGoals: savedProfitGoals, onUpdateGoals,
     riskSettings: savedRiskSettings, onUpdateRisk,
     activeTab, onTabChange
@@ -29,10 +34,9 @@ const Playbook: React.FC<PlaybookProps> = ({
     const [editingTag, setEditingTag] = useState<Tag | null>(null);
     const [editingTagCategory, setEditingTagCategory] = useState<string>('');
 
-    // --- Undo Logic State ---
-    const [showUndo, setShowUndo] = useState(false);
-    const [deletedStrategy, setDeletedStrategy] = useState<Strategy | null>(null);
-    const undoTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    const { showUndo, confirmDelete } = useUndo();
+
+    // --- New Strategy Form State ---
 
     // --- New Strategy Form State ---
     const initialFormState = {
@@ -93,11 +97,7 @@ const Playbook: React.FC<PlaybookProps> = ({
     }, [savedRiskSettings]);
 
     // Cleanup timer on unmount
-    useEffect(() => {
-        return () => {
-            if (undoTimerRef.current) clearTimeout(undoTimerRef.current);
-        };
-    }, []);
+
 
     // --- Handlers ---
     const handleEditStrategy = (strategy: Strategy) => {
@@ -158,13 +158,13 @@ const Playbook: React.FC<PlaybookProps> = ({
             const newVersion = isNewVersion ? formData.version + 1 : 1;
 
             const newStrategy: Strategy = {
-                id: Date.now().toString(),
+                id: crypto.randomUUID(),
                 version: newVersion,
                 status: 'active',
                 stats: {
                     totalTrades: 0,
                     winRate: 0,
-                    avgRR: 0,
+                    profitFactor: 0,
                     netRoi: 0,
                     totalPnl: 0
                 },
@@ -191,46 +191,26 @@ const Playbook: React.FC<PlaybookProps> = ({
         onSaveStrategies(updated);
     };
 
-    const deleteStrategy = (id: string) => {
+    const handleDeleteStrategy = (id: string, e: React.MouseEvent) => {
+        e.stopPropagation();
         const strategyToDelete = strategies.find(s => s.id === id);
         if (!strategyToDelete) return;
 
-        // Clear any existing timer if user deletes rapidly
-        if (undoTimerRef.current) {
-            clearTimeout(undoTimerRef.current);
-        }
+        confirmDelete(
+            `Are you sure you want to delete the strategy "${strategyToDelete.name}"?`,
+            () => {
+                // Remove immediate
+                onDeleteStrategy(id);
 
-        // 1. Store the strategy to allow undo
-        setDeletedStrategy(strategyToDelete);
-
-        // 2. Remove from list immediately
-        onSaveStrategies(strategies.filter(s => s.id !== id));
-
-        // 3. Show notification
-        setShowUndo(true);
-
-        // 4. Set timer to clear the undo capability after 10 seconds
-        undoTimerRef.current = setTimeout(() => {
-            setShowUndo(false);
-            setDeletedStrategy(null);
-            undoTimerRef.current = null;
-        }, 10000);
-    };
-
-    const handleUndo = () => {
-        if (deletedStrategy) {
-            // Add it back
-            onSaveStrategies([...strategies, deletedStrategy]);
-
-            // Reset states
-            setShowUndo(false);
-            setDeletedStrategy(null);
-
-            if (undoTimerRef.current) {
-                clearTimeout(undoTimerRef.current);
-                undoTimerRef.current = null;
+                // Show Undo
+                showUndo(
+                    `Strategy "${strategyToDelete.name}" deleted.`,
+                    () => {
+                        onRestoreStrategy(strategyToDelete);
+                    }
+                );
             }
-        }
+        );
     };
 
     // --- Handlers for Goals & Risk Save ---
@@ -277,9 +257,21 @@ const Playbook: React.FC<PlaybookProps> = ({
     };
 
     const handleDeleteTag = (id: string) => {
-        setTagList({
-            ...tagList,
-            [activeTagCategory]: (tagList[activeTagCategory] || []).filter(t => t.id !== id)
+        const tagToDelete = (tagList[activeTagCategory] || []).find(t => t.id === id);
+        if (!tagToDelete) return;
+
+        confirmDelete(`Delete tag "${tagToDelete.name}"?`, () => {
+            setTagList(prev => ({
+                ...prev,
+                [activeTagCategory]: (prev[activeTagCategory] || []).filter(t => t.id !== id)
+            }));
+
+            showUndo(`Tag "${tagToDelete.name}" deleted`, () => {
+                setTagList(prev => ({
+                    ...prev,
+                    [activeTagCategory]: [...(prev[activeTagCategory] || []), tagToDelete]
+                }));
+            });
         });
     };
 
@@ -310,15 +302,42 @@ const Playbook: React.FC<PlaybookProps> = ({
         { id: 'general', label: 'General Tags', icon: 'fa-cube' },
     ];
 
-    // Group Strategies by Name
+    // Group Strategies by Name AND Calculate Live Stats
     const groupedStrategies = useMemo(() => {
         const groups: Record<string, Strategy[]> = {};
         strategies.forEach(s => {
+            // Calculate stats for this specific strategy version
+            const strategyTrades = trades.filter(t => t.strategyId === s.id && t.status === 'CLOSED');
+            const totalTrades = strategyTrades.length;
+            const wins = strategyTrades.filter(t => (t.pnl || 0) > 0);
+            const losses = strategyTrades.filter(t => (t.pnl || 0) < 0);
+
+            const totalGrossProfit = wins.reduce((acc, t) => acc + (t.pnl || 0), 0);
+            const totalGrossLoss = Math.abs(losses.reduce((acc, t) => acc + (t.pnl || 0), 0));
+            const totalPnl = strategyTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
+
+            const profitFactor = totalGrossLoss > 0 ? (totalGrossProfit / totalGrossLoss) : (totalGrossProfit > 0 ? 10 : 0);
+            const winRate = totalTrades > 0 ? (wins.length / totalTrades) * 100 : 0;
+
+            // ROI calculation
+            const netRoi = totalTrades > 0 ? (strategyTrades.reduce((acc, t) => acc + (t.pnlPercentage || 0), 0) / totalTrades) : 0;
+
+            const strategyWithStats: Strategy = {
+                ...s,
+                stats: {
+                    totalTrades,
+                    winRate,
+                    profitFactor,
+                    netRoi,
+                    totalPnl
+                }
+            };
+
             if (!groups[s.name]) groups[s.name] = [];
-            groups[s.name].push(s);
+            groups[s.name].push(strategyWithStats);
         });
         return groups;
-    }, [strategies]);
+    }, [strategies, trades]);
 
     // Determine current version count for modal
     const currentVersionCount = editingStrategyId
@@ -348,8 +367,8 @@ const Playbook: React.FC<PlaybookProps> = ({
                             key={tab}
                             onClick={() => onTabChange(id)}
                             className={`flex items-center gap-2 rounded-lg px-5 py-2 text-sm font-medium transition-all ${isActive
-                                    ? 'bg-[#1E2330] text-white shadow-lg shadow-black/20 ring-1 ring-white/5'
-                                    : 'text-slate-500 hover:text-slate-300 hover:bg-[#1E2330]/50'
+                                ? 'bg-[#1E2330] text-white shadow-lg shadow-black/20 ring-1 ring-white/5'
+                                : 'text-slate-500 hover:text-slate-300 hover:bg-[#1E2330]/50'
                                 }`}
                         >
                             {tab === 'Strategies' && <i className="fa-solid fa-chess-board text-xs"></i>}
@@ -385,7 +404,7 @@ const Playbook: React.FC<PlaybookProps> = ({
                                 versions={versions}
                                 onToggleStatus={toggleStrategyStatus}
                                 onEdit={handleEditStrategy}
-                                onDelete={deleteStrategy}
+                                onDelete={handleDeleteStrategy}
                             />
                         ))}
                     </div>
@@ -538,8 +557,8 @@ const Playbook: React.FC<PlaybookProps> = ({
                                         onClick={handleSaveAsNewVersion}
                                         disabled={currentVersionCount >= 5}
                                         className={`rounded-lg border px-6 py-2.5 text-sm font-bold transition-all flex items-center gap-2 ${currentVersionCount >= 5
-                                                ? 'border-slate-800 bg-slate-900 text-slate-500 cursor-not-allowed'
-                                                : 'border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#A78BFA] hover:bg-[#8B5CF6]/20'
+                                            ? 'border-slate-800 bg-slate-900 text-slate-500 cursor-not-allowed'
+                                            : 'border-[#8B5CF6] bg-[#8B5CF6]/10 text-[#A78BFA] hover:bg-[#8B5CF6]/20'
                                             }`}
                                         title={currentVersionCount >= 5 ? "Max 5 versions allowed" : "Create next version"}
                                     >
@@ -653,32 +672,7 @@ const Playbook: React.FC<PlaybookProps> = ({
             )}
 
             {/* --- UNDO NOTIFICATION --- */}
-            {showUndo && (
-                <div className="fixed bottom-6 right-6 z-50 flex items-center gap-4 rounded-lg bg-[#151A25] border border-slate-700 p-4 shadow-2xl animate-in slide-in-from-bottom-5">
-                    <div className="flex items-center gap-3">
-                        <div className="h-8 w-8 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-500">
-                            <i className="fa-solid fa-trash-can text-sm"></i>
-                        </div>
-                        <div>
-                            <p className="text-sm font-bold text-white">Strategy Deleted</p>
-                            <p className="text-xs text-slate-400">{deletedStrategy?.name}</p>
-                        </div>
-                    </div>
-                    <div className="h-8 w-px bg-slate-700 mx-2"></div>
-                    <button
-                        onClick={handleUndo}
-                        className="text-sm font-bold text-[#A78BFA] hover:text-white transition-colors"
-                    >
-                        UNDO
-                    </button>
-                    <button
-                        onClick={() => setShowUndo(false)}
-                        className="text-slate-500 hover:text-white ml-2"
-                    >
-                        <i className="fa-solid fa-xmark text-sm"></i>
-                    </button>
-                </div>
-            )}
+
 
             {/* Goals & Risk Section */}
             {activeTab === 'goals-risk' && (
@@ -793,8 +787,8 @@ const Playbook: React.FC<PlaybookProps> = ({
                                 key={cat.id}
                                 onClick={() => setActiveTagCategory(cat.id)}
                                 className={`flex items-center gap-2 pb-3 text-sm font-medium transition-all relative ${activeTagCategory === cat.id
-                                        ? 'text-[#A78BFA]'
-                                        : 'text-slate-400 hover:text-slate-200'
+                                    ? 'text-[#A78BFA]'
+                                    : 'text-slate-400 hover:text-slate-200'
                                     }`}
                             >
                                 <i className={`fa-solid ${cat.icon}`}></i>
@@ -924,7 +918,7 @@ const StrategyCard: React.FC<{
     versions: Strategy[];
     onToggleStatus: (id: string) => void;
     onEdit: (strategy: Strategy) => void;
-    onDelete: (id: string) => void
+    onDelete: (id: string, e: React.MouseEvent) => void
 }> = ({ versions, onToggleStatus, onEdit, onDelete }) => {
     // Sort by version (ascending for tabs)
     const sortedVersions = useMemo(() => [...versions].sort((a, b) => a.version - b.version), [versions]);
@@ -965,8 +959,8 @@ const StrategyCard: React.FC<{
                                     key={v.id}
                                     onClick={(e) => { e.stopPropagation(); setActiveVerId(v.id); }}
                                     className={`text-[10px] font-bold px-2 py-0.5 rounded border transition-all ${v.id === activeVerId
-                                            ? 'bg-indigo-600 border-indigo-600 text-white'
-                                            : 'bg-[#0B0E14] border-slate-700 text-slate-500 hover:text-slate-300'
+                                        ? 'bg-indigo-600 border-indigo-600 text-white'
+                                        : 'bg-[#0B0E14] border-slate-700 text-slate-500 hover:text-slate-300'
                                         }`}
                                 >
                                     v{v.version}
@@ -975,8 +969,8 @@ const StrategyCard: React.FC<{
                         </div>
                     </div>
                     <span className={`self-start rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider border ${isActive
-                            ? 'bg-[#2E1065] text-[#A78BFA] border-[#8B5CF6]/20'
-                            : 'bg-slate-800 text-slate-500 border-slate-700'
+                        ? 'bg-[#2E1065] text-[#A78BFA] border-[#8B5CF6]/20'
+                        : 'bg-slate-800 text-slate-500 border-slate-700'
                         }`}>
                         {strategy.status}
                     </span>
@@ -991,7 +985,7 @@ const StrategyCard: React.FC<{
                     <button onClick={() => onEdit(strategy)} className="text-slate-500 hover:text-white transition-colors" title="Edit Version">
                         <i className="fa-solid fa-pen text-sm"></i>
                     </button>
-                    <button onClick={() => onDelete(strategy.id)} className="text-slate-500 hover:text-rose-400 transition-colors" title="Delete Version">
+                    <button onClick={(e) => onDelete(strategy.id, e)} className="text-slate-500 hover:text-rose-400 transition-colors" title="Delete Version">
                         <i className="fa-regular fa-trash-can text-sm"></i>
                     </button>
                     <button
@@ -1004,20 +998,20 @@ const StrategyCard: React.FC<{
             </div>
 
             {isExpanded && (
-                <div className="p-6 space-y-8 animate-in fade-in duration-300 key-{activeVerId}">
+                <div key={activeVerId} className="p-6 space-y-8 animate-in fade-in duration-300">
                     <div className="grid grid-cols-2 gap-4 md:grid-cols-5">
                         <StatBox label="Total Trades" value={(strategy.stats?.totalTrades || 0).toString()} />
                         <StatBox label="Win Rate" value={`${(strategy.stats?.winRate || 0).toFixed(1)}%`} />
-                        <StatBox label="Avg. R:R" value={`${(strategy.stats?.avgRR || 0).toFixed(2)}:1`} />
+                        <StatBox label="Profit Factor" value={(strategy.stats?.profitFactor || 0).toFixed(2)} />
                         <StatBox
                             label="Net ROI"
-                            value={`${(strategy.stats?.netRoi || 0).toFixed(2)}%`}
-                            valueColor="text-emerald-400"
+                            value={(strategy.stats?.netRoi || 0).toFixed(2) + '%'}
+                            valueColor={(strategy.stats?.netRoi || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}
                         />
                         <StatBox
                             label="Total P&L"
-                            value={`$${(strategy.stats?.totalPnl || 0).toFixed(2)}`}
-                            valueColor="text-emerald-400"
+                            value={((strategy.stats?.totalPnl || 0) >= 0 ? '$' : '-$') + Math.abs(strategy.stats?.totalPnl || 0).toFixed(2)}
+                            valueColor={(strategy.stats?.totalPnl || 0) >= 0 ? 'text-emerald-400' : 'text-rose-400'}
                             bg="bg-[#151A25] border-slate-700"
                         />
                     </div>
