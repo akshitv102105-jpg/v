@@ -14,6 +14,7 @@ const Auth: React.FC = () => {
     const [error, setError] = useState('');
     const [message, setMessage] = useState('');
     const [shake, setShake] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -116,12 +117,19 @@ const Auth: React.FC = () => {
                             <div className="input-wrapper">
                                 <i className="fa-solid fa-lock"></i>
                                 <input
-                                    type="password"
+                                    type={showPassword ? 'text' : 'password'}
                                     required
                                     placeholder="••••••••"
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
                                 />
+                                <button
+                                    type="button"
+                                    className="password-toggle-btn"
+                                    onClick={() => setShowPassword(!showPassword)}
+                                >
+                                    <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'} animate-eye`}></i>
+                                </button>
                             </div>
                         </div>
 
@@ -131,12 +139,19 @@ const Auth: React.FC = () => {
                                 <div className="input-wrapper">
                                     <i className="fa-solid fa-shield-halved"></i>
                                     <input
-                                        type="password"
+                                        type={showPassword ? 'text' : 'password'}
                                         required
                                         placeholder="••••••••"
                                         value={confirmPassword}
                                         onChange={(e) => setConfirmPassword(e.target.value)}
                                     />
+                                    <button
+                                        type="button"
+                                        className="password-toggle-btn"
+                                        onClick={() => setShowPassword(!showPassword)}
+                                    >
+                                        <i className={`fa-solid ${showPassword ? 'fa-eye-slash' : 'fa-eye'} animate-eye`}></i>
+                                    </button>
                                 </div>
                             </div>
                         )}
