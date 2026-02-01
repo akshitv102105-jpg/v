@@ -88,8 +88,17 @@ body {
     opacity: 0;
   }
 
+
   to {
     transform: translateY(0);
     opacity: 1;
   }
+}
+
+/* FORCE DISABLE ALL ANIMATIONS */
+*,
+*::before,
+*::after {
+  animation: none !important;
+  transition: none !important;
 }
