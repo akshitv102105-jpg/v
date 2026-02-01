@@ -1,7 +1,8 @@
 
 import React, { useState, useMemo } from 'react';
-import { Trade, Transaction, Account, getCurrencyFormatter, TradeStatus } from '../types';
+import { Trade, Transaction, Account, getCurrencyFormatter, TradeStatus, FeeConfig } from '../types';
 import { ResponsiveContainer, Tooltip, AreaChart, Area, XAxis, YAxis, CartesianGrid } from 'recharts';
+import { EXCHANGE_PRESETS } from '../constants/exchanges';
 
 interface PortfolioProps {
     trades: Trade[];
@@ -15,6 +16,8 @@ interface PortfolioProps {
     onSelectAccount: (id: string) => void;
     onDeleteAccount?: (id: string) => void;
     onDeleteTransaction?: (id: string) => void;
+    availableExchanges?: string[];
+    onAddExchange?: (name: string) => void;
 }
 
 const Portfolio: React.FC<PortfolioProps> = ({
@@ -26,7 +29,9 @@ const Portfolio: React.FC<PortfolioProps> = ({
     onUpdateAccount,
     baseCurrency,
     activeAccountId,
-    onSelectAccount
+    onSelectAccount,
+    availableExchanges = [],
+    onAddExchange
 }) => {
     // Local state for activeAccountId removed, using prop
     const [depositAmount, setDepositAmount] = useState('');
@@ -39,27 +44,68 @@ const Portfolio: React.FC<PortfolioProps> = ({
     const [newAccountName, setNewAccountName] = useState('');
     const [isExclusive, setIsExclusive] = useState(false);
     const [editingAccount, setEditingAccount] = useState<Account | null>(null);
+    const [selectedExchange, setSelectedExchange] = useState<string>('');
+    const [showAddExchange, setShowAddExchange] = useState(false);
+    const [newExchangeNameCustom, setNewExchangeNameCustom] = useState('');
+    const [customFees, setCustomFees] = useState<FeeConfig>({ maker: 0.02, taker: 0.05, type: 'PERCENTAGE' });
+    const [accountLeverage, setAccountLeverage] = useState<string>('100');
+    const [favoriteSymbols, setFavoriteSymbols] = useState<string[]>([]);
 
     // --- Handlers ---
     const handleSaveAccount = () => {
         if (!newAccountName.trim()) return;
 
+        const updatedAccount: Account = {
+            id: editingAccount?.id || Date.now().toString(),
+            name: newAccountName,
+            currency: 'USD',
+            icon: 'fa-wallet',
+            color: 'text-indigo-400',
+            isExclusive,
+            exchange: selectedExchange,
+            fees: customFees,
+            leverage: parseFloat(accountLeverage) || 100,
+            favoriteSymbols
+        };
+
         if (editingAccount) {
-            onUpdateAccount({ ...editingAccount, name: newAccountName, isExclusive });
+            onUpdateAccount(updatedAccount);
         } else {
-            onAddAccount({
-                id: Date.now().toString(),
-                name: newAccountName,
-                currency: 'USD',
-                icon: 'fa-wallet',
-                color: 'text-indigo-400',
-                isExclusive
-            });
+            onAddAccount(updatedAccount);
         }
         setShowAccountModal(false);
         setNewAccountName('');
         setIsExclusive(false);
         setEditingAccount(null);
+        setSelectedExchange('');
+        setCustomFees({ maker: 0.02, taker: 0.05, type: 'PERCENTAGE' });
+        setAccountLeverage('100');
+        setFavoriteSymbols([]);
+    };
+
+    const handleSelectPresetExchange = (exchangeName: string) => {
+        if (exchangeName === 'ADD_NEW') {
+            setShowAddExchange(true);
+            return;
+        }
+        const preset = EXCHANGE_PRESETS.find(e => e.name === exchangeName);
+        if (preset) {
+            setSelectedExchange(preset.name);
+            setCustomFees({ maker: preset.makerFee, taker: preset.takerFee, type: preset.feeType });
+            setAccountLeverage(preset.maxLeverage.toString());
+        } else if (availableExchanges.includes(exchangeName)) {
+            setSelectedExchange(exchangeName);
+            // Keep current fees/leverage or reset to default
+        }
+    };
+
+    const handleAddCustomExchange = () => {
+        if (newExchangeNameCustom && newExchangeNameCustom.trim() && onAddExchange) {
+            onAddExchange(newExchangeNameCustom.trim());
+            setSelectedExchange(newExchangeNameCustom.trim());
+            setNewExchangeNameCustom('');
+            setShowAddExchange(false);
+        }
     };
 
     const activeAccount = accounts.find(a => a.id === activeAccountId) || accounts[0];
@@ -229,6 +275,10 @@ const Portfolio: React.FC<PortfolioProps> = ({
                                     setEditingAccount(acc);
                                     setNewAccountName(acc.name);
                                     setIsExclusive(acc.isExclusive || false);
+                                    setSelectedExchange(acc.exchange || '');
+                                    setCustomFees(acc.fees || { maker: 0.02, taker: 0.05, type: 'PERCENTAGE' });
+                                    setAccountLeverage((acc.leverage || 100).toString());
+                                    setFavoriteSymbols(acc.favoriteSymbols || []);
                                     setShowAccountModal(true);
                                 }}
                                 className="text-slate-600 hover:text-white transition-colors"
@@ -248,6 +298,10 @@ const Portfolio: React.FC<PortfolioProps> = ({
                         setEditingAccount(null);
                         setNewAccountName('');
                         setIsExclusive(false);
+                        setSelectedExchange('');
+                        setCustomFees({ maker: 0.02, taker: 0.05, type: 'PERCENTAGE' });
+                        setAccountLeverage('100');
+                        setFavoriteSymbols([]);
                         setShowAccountModal(true);
                     }}
                     className="min-w-[60px] flex items-center justify-center rounded-xl border border-dashed border-slate-700 bg-[#0B0E14] text-slate-500 hover:text-white hover:border-slate-500 transition-colors"
@@ -420,44 +474,142 @@ const Portfolio: React.FC<PortfolioProps> = ({
             {/* Account Modal */}
             {showAccountModal && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4 animate-in fade-in duration-200">
-                    <div className="w-full max-w-sm bg-[#0B0E14] rounded-2xl border border-slate-800 shadow-2xl p-6">
-                        <h3 className="text-lg font-bold text-white mb-4">{editingAccount ? 'Edit Account' : 'New Account'}</h3>
-                        <div className="space-y-4">
-                            <div>
-                                <label className="text-xs text-slate-500 uppercase font-bold block mb-1">Account Name</label>
-                                <input
-                                    type="text"
-                                    value={newAccountName}
-                                    onChange={(e) => setNewAccountName(e.target.value)}
-                                    className="w-full bg-[#151A25] border border-slate-700 rounded-lg px-3 py-2 text-sm text-white focus:border-indigo-500 outline-none"
-                                    placeholder="e.g. Scalping Account"
-                                />
+                    <div className="w-full max-w-lg bg-[#0B0E14] rounded-2xl border border-slate-800 shadow-2xl p-6 max-h-[90vh] overflow-y-auto custom-scrollbar">
+                        <div className="flex justify-between items-center mb-6">
+                            <h3 className="text-xl font-bold text-white">{editingAccount ? 'Edit Account' : 'New Account'}</h3>
+                            <button onClick={() => setShowAccountModal(false)} className="text-slate-500 hover:text-white transition-colors">
+                                <i className="fa-solid fa-xmark"></i>
+                            </button>
+                        </div>
+
+                        <div className="space-y-6">
+                            {/* Basic Info */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold block">Account Name</label>
+                                    <input
+                                        type="text"
+                                        value={newAccountName}
+                                        onChange={(e) => setNewAccountName(e.target.value)}
+                                        className="w-full bg-[#151A25] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        placeholder="e.g. Scalping Account"
+                                    />
+                                </div>
+                                <div className="space-y-1">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold block">Default Leverage</label>
+                                    <input
+                                        type="number"
+                                        value={accountLeverage}
+                                        onChange={(e) => setAccountLeverage(e.target.value)}
+                                        className="w-full bg-[#151A25] border border-slate-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-indigo-500 outline-none transition-colors"
+                                        placeholder="100"
+                                    />
+                                </div>
                             </div>
-                            <div className="flex items-center gap-2">
+
+                            {/* Exchange selection and Add New button */}
+                            <div className="space-y-2">
+                                <label className="text-[10px] text-slate-500 uppercase font-bold block">Select Exchange (Optional)</label>
+                                {showAddExchange ? (
+                                    <div className="flex gap-2 p-3 bg-indigo-500/5 border border-indigo-500/20 rounded-xl">
+                                        <input
+                                            autoFocus
+                                            type="text"
+                                            value={newExchangeNameCustom}
+                                            onChange={e => setNewExchangeNameCustom(e.target.value)}
+                                            placeholder="Enter exchange name..."
+                                            className="flex-1 bg-transparent border-none outline-none text-sm text-white"
+                                            onKeyDown={e => {
+                                                if (e.key === 'Enter') handleAddCustomExchange();
+                                                if (e.key === 'Escape') setShowAddExchange(false);
+                                            }}
+                                        />
+                                        <button onClick={handleAddCustomExchange} className="px-3 rounded-lg bg-indigo-600 text-white text-[10px] font-bold">Add</button>
+                                        <button onClick={() => setShowAddExchange(false)} className="text-slate-500 hover:text-white px-2"><i className="fa-solid fa-xmark"></i></button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
+                                        {EXCHANGE_PRESETS.map(exchange => (
+                                            <button
+                                                key={exchange.name}
+                                                type="button"
+                                                onClick={() => handleSelectPresetExchange(exchange.name)}
+                                                className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${selectedExchange === exchange.name ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-slate-800 bg-[#0F1218] text-slate-500 hover:border-slate-700 hover:text-slate-300'}`}
+                                            >
+                                                <i className={`fa-solid ${exchange.icon || 'fa-building-columns'} text-xs`}></i>
+                                                <span className="text-[9px] font-bold uppercase truncate w-full text-center">{exchange.name}</span>
+                                            </button>
+                                        ))}
+                                        {availableExchanges.filter(e => !EXCHANGE_PRESETS.find(p => p.name === e)).map(ex => (
+                                            <button
+                                                key={ex}
+                                                type="button"
+                                                onClick={() => setSelectedExchange(ex)}
+                                                className={`flex flex-col items-center gap-1.5 p-2 rounded-lg border transition-all ${selectedExchange === ex ? 'border-indigo-500 bg-indigo-500/10 text-white' : 'border-slate-800 bg-[#0F1218] text-slate-500 hover:border-slate-700 hover:text-slate-300'}`}
+                                            >
+                                                <i className="fa-solid fa-cube text-xs"></i>
+                                                <span className="text-[9px] font-bold uppercase truncate w-full text-center">{ex}</span>
+                                            </button>
+                                        ))}
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddExchange(true)}
+                                            className="flex flex-col items-center gap-1.5 p-2 rounded-lg border border-dashed border-slate-800 bg-transparent text-slate-600 hover:border-indigo-500/50 hover:text-indigo-400 transition-all"
+                                        >
+                                            <i className="fa-solid fa-plus text-xs"></i>
+                                            <span className="text-[9px] font-bold uppercase">Add Custom</span>
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Fee Configuration */}
+                            <div className="space-y-3 p-4 rounded-xl bg-[#0F1218] border border-slate-800/50">
+                                <div className="flex justify-between items-center">
+                                    <label className="text-[10px] text-slate-500 uppercase font-bold">Fee Configuration</label>
+                                    <div className="flex bg-black/40 p-0.5 rounded-md border border-slate-800">
+                                        <button onClick={() => setCustomFees({ ...customFees, type: 'PERCENTAGE' })} className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${customFees.type === 'PERCENTAGE' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}>%</button>
+                                        <button onClick={() => setCustomFees({ ...customFees, type: 'FIXED' })} className={`px-2 py-0.5 rounded text-[9px] font-bold uppercase transition-all ${customFees.type === 'FIXED' ? 'bg-indigo-600 text-white' : 'text-slate-500 hover:text-white'}`}>Fixed</button>
+                                    </div>
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] text-indigo-400 font-bold uppercase">Maker Fee</span>
+                                        <input type="number" step="0.001" value={customFees.maker} onChange={e => setCustomFees({ ...customFees, maker: parseFloat(e.target.value) || 0 })} className="w-full bg-[#0B0E14] border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white font-mono outline-none" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <span className="text-[9px] text-rose-400 font-bold uppercase">Taker Fee</span>
+                                        <input type="number" step="0.001" value={customFees.taker} onChange={e => setCustomFees({ ...customFees, taker: parseFloat(e.target.value) || 0 })} className="w-full bg-[#0B0E14] border border-slate-700 rounded-lg px-3 py-1.5 text-sm text-white font-mono outline-none" />
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="flex items-center gap-3 p-3 rounded-xl bg-amber-500/5 border border-amber-500/10">
                                 <input
                                     type="checkbox"
                                     id="isExclusive"
                                     checked={isExclusive}
                                     onChange={(e) => setIsExclusive(e.target.checked)}
-                                    className="accent-indigo-500 h-4 w-4"
+                                    className="accent-amber-500 h-4 w-4 rounded"
                                 />
-                                <label htmlFor="isExclusive" className="text-xs text-slate-400 cursor-pointer select-none">
-                                    <span className="font-bold text-white">Exclusive Account</span>
-                                    <span className="block text-[10px] text-slate-500">Hide trades from global analytics & other accounts</span>
+                                <label htmlFor="isExclusive" className="flex-1 cursor-pointer select-none">
+                                    <span className="block text-xs font-bold text-amber-500 uppercase tracking-tighter">Exclusive Account</span>
+                                    <span className="block text-[10px] text-slate-500 leading-tight">Hide trades from global analytics & other accounts.</span>
                                 </label>
                             </div>
-                            <div className="flex gap-2 justify-end pt-2">
+
+                            <div className="flex gap-3 justify-end pt-2 border-t border-slate-800">
                                 <button
                                     onClick={() => setShowAccountModal(false)}
-                                    className="px-4 py-2 text-xs font-bold text-slate-400 hover:text-white"
+                                    className="px-6 py-2.5 text-xs font-bold text-slate-500 hover:text-white transition-colors"
                                 >
                                     Cancel
                                 </button>
                                 <button
                                     onClick={handleSaveAccount}
-                                    className="px-4 py-2 bg-indigo-600 text-white rounded-lg text-xs font-bold hover:bg-indigo-500"
+                                    className="px-8 py-2.5 bg-indigo-600 text-white rounded-xl text-xs font-bold hover:bg-indigo-500 transition-all shadow-lg shadow-indigo-500/20"
                                 >
-                                    Save
+                                    {editingAccount ? 'Save Changes' : 'Create Account'}
                                 </button>
                             </div>
                         </div>

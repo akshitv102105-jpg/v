@@ -8,6 +8,16 @@ export interface FeeConfig {
     type: 'PERCENTAGE' | 'FIXED';
 }
 
+export interface ExchangeConfig {
+    name: string;
+    category: 'Crypto' | 'Forex' | 'Stock' | 'Indices';
+    makerFee: number;
+    takerFee: number;
+    feeType: 'PERCENTAGE' | 'FIXED';
+    maxLeverage: number;
+    icon?: string;
+}
+
 export interface ThemeConfig {
     primary: string;
     secondary: string;
@@ -43,6 +53,14 @@ export interface UserProfile {
     mana?: number;
     comboMultiplier?: number;
     characterType?: string;
+
+    // Trading Presets
+    slPresets?: number[];
+    tpPresets?: number[];
+    leveragePresets?: number[];
+    riskPresets?: number[];
+    favoriteSymbols?: string[];
+    exchanges?: string[];
 }
 
 export const TIMEZONES = [
@@ -141,7 +159,7 @@ export interface Trade {
     exchange?: string;
 
     tradeType?: TradeType;
-
+    source?: 'MANUAL' | 'CSV';
     accountId?: string;
 
     stopLoss?: number;
@@ -238,6 +256,10 @@ export interface Account {
     icon: string;
     color: string;
     isExclusive?: boolean;
+    exchange?: string;
+    fees?: FeeConfig;
+    leverage?: number;
+    favoriteSymbols?: string[];
 }
 
 export interface Transaction {

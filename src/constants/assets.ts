@@ -1,0 +1,47 @@
+
+export const TRADING_ASSETS = [
+    // Crypto
+    { symbol: 'BTC', name: 'Bitcoin', icon: 'fa-brands fa-bitcoin', color: 'text-amber-500', category: 'Crypto' },
+    { symbol: 'ETH', name: 'Ethereum', icon: 'fa-brands fa-ethereum', color: 'text-indigo-400', category: 'Crypto' },
+    { symbol: 'SOL', name: 'Solana', icon: 'fa-solid fa-layer-group', color: 'text-emerald-400', category: 'Crypto' },
+    { symbol: 'XRP', name: 'Ripple', icon: 'fa-solid fa-droplet', color: 'text-blue-400', category: 'Crypto' },
+    { symbol: 'BNB', name: 'Binance Coin', icon: 'fa-solid fa-coins', color: 'text-yellow-400', category: 'Crypto' },
+    { symbol: 'ADA', name: 'Cardano', icon: 'fa-solid fa-certificate', color: 'text-blue-600', category: 'Crypto' },
+    { symbol: 'DOGE', name: 'Dogecoin', icon: 'fa-solid fa-dog', color: 'text-amber-300', category: 'Crypto' },
+    { symbol: 'TRX', name: 'Tron', icon: 'fa-solid fa-diamond', color: 'text-rose-500', category: 'Crypto' },
+    { symbol: 'DOT', name: 'Polkadot', icon: 'fa-solid fa-circle-dot', color: 'text-pink-500', category: 'Crypto' },
+    { symbol: 'MATIC', name: 'Polygon', icon: 'fa-solid fa-draw-polygon', color: 'text-purple-500', category: 'Crypto' },
+    { symbol: 'LTC', name: 'Litecoin', icon: 'fa-solid fa-litecoin-sign', color: 'text-slate-300', category: 'Crypto' },
+    { symbol: 'SHIB', name: 'Shiba Inu', icon: 'fa-solid fa-shield-dog', color: 'text-orange-400', category: 'Crypto' },
+    { symbol: 'AVAX', name: 'Avalanche', icon: 'fa-solid fa-mountain', color: 'text-rose-500', category: 'Crypto' },
+    { symbol: 'LINK', name: 'Chainlink', icon: 'fa-solid fa-link', color: 'text-blue-500', category: 'Crypto' },
+    { symbol: 'NEAR', name: 'Near Protocol', icon: 'fa-solid fa-circle', color: 'text-slate-200', category: 'Crypto' },
+    { symbol: 'ATOM', name: 'Cosmos', icon: 'fa-solid fa-atom', color: 'text-indigo-300', category: 'Crypto' },
+    { symbol: 'UNI', name: 'Uniswap', icon: 'fa-solid fa-horse', color: 'text-pink-400', category: 'Crypto' },
+    { symbol: 'PEPE', name: 'Pepe', icon: 'fa-solid fa-frog', color: 'text-emerald-600', category: 'Crypto' },
+    { symbol: 'FTM', name: 'Fantom', icon: 'fa-solid fa-ghost', color: 'text-blue-500', category: 'Crypto' },
+    { symbol: 'INJ', name: 'Injective', icon: 'fa-solid fa-syringe', color: 'text-blue-400', category: 'Crypto' },
+    { symbol: 'TIA', name: 'Celestia', icon: 'fa-solid fa-bahai', color: 'text-indigo-400', category: 'Crypto' },
+    { symbol: 'SEI', name: 'Sei', icon: 'fa-solid fa-water', color: 'text-rose-500', category: 'Crypto' },
+    { symbol: 'JUP', name: 'Jupiter', icon: 'fa-solid fa-planet-ring', color: 'text-emerald-400', category: 'Crypto' },
+    { symbol: 'RNDR', name: 'Render Token', icon: 'fa-solid fa-square-person-confined', color: 'text-orange-500', category: 'Crypto' },
+    { symbol: 'FET', name: 'Fetch.ai', icon: 'fa-solid fa-brain', color: 'text-indigo-600', category: 'Crypto' },
+
+    // Forex
+    { symbol: 'EURUSD', name: 'Euro / US Dollar', icon: 'fa-solid fa-euro-sign', color: 'text-blue-400', category: 'Forex' },
+    { symbol: 'GBPUSD', name: 'British Pound / US Dollar', icon: 'fa-solid fa-sterling-sign', color: 'text-indigo-500', category: 'Forex' },
+    { symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', icon: 'fa-solid fa-yen-sign', color: 'text-rose-400', category: 'Forex' },
+    { symbol: 'AUDUSD', name: 'Australian Dollar / US Dollar', icon: 'fa-solid fa-emerald-500', color: 'text-emerald-500', category: 'Forex' },
+    { symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', icon: 'fa-solid fa-dollar-sign', color: 'text-rose-500', category: 'Forex' },
+    { symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', icon: 'fa-solid fa-franc-sign', color: 'text-blue-300', category: 'Forex' },
+    { symbol: 'NZDUSD', name: 'NZ Dollar / US Dollar', icon: 'fa-solid fa-dollar-sign', color: 'text-teal-400', category: 'Forex' },
+    { symbol: 'EURJPY', name: 'Euro / Japanese Yen', icon: 'fa-solid fa-yen-sign', color: 'text-blue-400', category: 'Forex' },
+    { symbol: 'GBPJPY', name: 'Pound / Japanese Yen', icon: 'fa-solid fa-yen-sign', color: 'text-indigo-500', category: 'Forex' },
+
+    // Commodities
+    { symbol: 'XAUUSD', name: 'Gold / US Dollar', icon: 'fa-solid fa-ring', color: 'text-amber-400', category: 'Commodities' },
+    { symbol: 'XAGUSD', name: 'Silver / US Dollar', icon: 'fa-solid fa-coins', color: 'text-slate-400', category: 'Commodities' },
+    { symbol: 'USOIL', name: 'Crude Oil WTI', icon: 'fa-solid fa-droplet', color: 'text-slate-800', category: 'Commodities' },
+    { symbol: 'UKOIL', name: 'Brent Crude Oil', icon: 'fa-solid fa-oil-can', color: 'text-slate-700', category: 'Commodities' },
+    { symbol: 'NG', name: 'Natural Gas', icon: 'fa-solid fa-fire-flame-simple', color: 'text-blue-200', category: 'Commodities' },
+];

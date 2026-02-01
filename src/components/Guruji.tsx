@@ -243,7 +243,7 @@ Ask me to analyze your trades, review your performance, or seek guidance on your
                     setups: [],
                     sizingRules: [],
                     riskParams: { maxRiskPerTrade: 1, minRR: 2, dailyMaxDD: 3 },
-                    stats: { totalTrades: 0, winRate: 0, avgRR: 0, netRoi: 0, totalPnl: 0 }
+                    stats: { totalTrades: 0, winRate: 0, profitFactor: 0, netRoi: 0, totalPnl: 0 }
                 };
                 await onAddStrategy(newStrategy);
                 console.log(`Guruji created strategy: ${name}`);

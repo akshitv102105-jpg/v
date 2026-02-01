@@ -26,7 +26,11 @@ export const useAccounts = () => {
                 currency: item.currency,
                 icon: item.icon,
                 color: item.color,
-                isExclusive: item.is_exclusive
+                isExclusive: item.is_exclusive,
+                exchange: item.exchange,
+                fees: item.fees,
+                leverage: item.leverage,
+                favoriteSymbols: item.favorite_symbols
             }));
 
             setAccounts(mappedAccounts);
@@ -49,7 +53,11 @@ export const useAccounts = () => {
                     currency: account.currency,
                     icon: account.icon,
                     color: account.color,
-                    is_exclusive: account.isExclusive
+                    is_exclusive: account.isExclusive,
+                    exchange: account.exchange,
+                    fees: account.fees,
+                    leverage: account.leverage,
+                    favorite_symbols: account.favoriteSymbols
                 }])
                 .select()
                 .single();
@@ -62,7 +70,11 @@ export const useAccounts = () => {
                 currency: data.currency,
                 icon: data.icon,
                 color: data.color,
-                isExclusive: data.is_exclusive
+                isExclusive: data.is_exclusive,
+                exchange: data.exchange,
+                fees: data.fees,
+                leverage: data.leverage,
+                favoriteSymbols: data.favorite_symbols
             };
 
             setAccounts(prev => [...prev, newAccount]);
@@ -83,6 +95,10 @@ export const useAccounts = () => {
             if (updates.icon) payload.icon = updates.icon;
             if (updates.color) payload.color = updates.color;
             if (updates.isExclusive !== undefined) payload.is_exclusive = updates.isExclusive;
+            if (updates.exchange !== undefined) payload.exchange = updates.exchange;
+            if (updates.fees !== undefined) payload.fees = updates.fees;
+            if (updates.leverage !== undefined) payload.leverage = updates.leverage;
+            if (updates.favoriteSymbols !== undefined) payload.favorite_symbols = updates.favoriteSymbols;
 
             const { error } = await supabase
                 .from('accounts')

@@ -3,6 +3,8 @@ import React, { useRef } from 'react';
 import Papa from 'papaparse';
 import { Trade, TradeStatus, TradeSide, UserProfile } from '../types';
 import { DataMigration } from './DataMigration';
+import { TRADING_ASSETS } from '../constants/assets';
+import { useState, useMemo } from 'react';
 
 interface SettingsProps {
     userProfile: UserProfile;
@@ -11,12 +13,25 @@ interface SettingsProps {
     trades: Trade[];
     onClearTrades?: () => void;
     onClearImportedTrades?: () => void;
+    setActiveView?: (view: any) => void;
 }
 
 const Settings: React.FC<SettingsProps> = ({
-    userProfile, onUpdateProfile, onImportTrades, trades, onClearTrades, onClearImportedTrades
+    userProfile, onUpdateProfile, onImportTrades, trades, onClearTrades, onClearImportedTrades, setActiveView
 }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const [symbolSearch, setSymbolSearch] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+
+    const filteredSuggestions = useMemo(() => {
+        const query = symbolSearch.toUpperCase().replace(/[^A-Z0-9]/g, '');
+        if (!query) return TRADING_ASSETS.slice(0, 10);
+        return TRADING_ASSETS.filter(a => {
+            const sym = a.symbol.toUpperCase().replace(/[^A-Z0-9]/g, '');
+            const name = a.name.toUpperCase();
+            return sym.includes(query) || name.includes(symbolSearch.toUpperCase());
+        }).slice(0, 10);
+    }, [symbolSearch]);
 
     // --- Handlers for Data ---
     const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -264,6 +279,160 @@ const Settings: React.FC<SettingsProps> = ({
                         </div>
                     </div>
                 </SectionCard>
+                <SectionCard title="Trading Presets" icon="fa-calculator">
+                    <div className="space-y-8">
+                        {/* SL & TP Presets */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                            <PresetEditor
+                                label="Stop Loss Presets (%)"
+                                presets={userProfile.slPresets || [1, 2, 3, 4, 5, 6]}
+                                onUpdate={(newPresets) => onUpdateProfile({ ...userProfile, slPresets: newPresets })}
+                                color="rose"
+                            />
+                            <PresetEditor
+                                label="Take Profit Presets (%)"
+                                presets={userProfile.tpPresets || [1, 2, 3, 4, 5, 6]}
+                                onUpdate={(newPresets) => onUpdateProfile({ ...userProfile, tpPresets: newPresets })}
+                                color="emerald"
+                            />
+                        </div>
+
+                        {/* Leverage & Risk Presets */}
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-6 border-t border-slate-800">
+                            <PresetEditor
+                                label="Leverage Presets (x)"
+                                presets={userProfile.leveragePresets || [1, 5, 10, 25, 50, 100, 500, 1000, 2000]}
+                                onUpdate={(newPresets) => onUpdateProfile({ ...userProfile, leveragePresets: newPresets })}
+                                color="indigo"
+                            />
+                            <PresetEditor
+                                label="Risk Presets (%)"
+                                presets={userProfile.riskPresets || [0.5, 1, 2, 3, 5]}
+                                onUpdate={(newPresets) => onUpdateProfile({ ...userProfile, riskPresets: newPresets })}
+                                color="amber"
+                            />
+                        </div>
+
+                        {/* Custom Exchanges */}
+                        <div className="pt-6 border-t border-slate-800">
+                            <StringPresetEditor
+                                label="Custom Exchanges"
+                                presets={userProfile.exchanges || []}
+                                onUpdate={(newExchanges) => onUpdateProfile({ ...userProfile, exchanges: newExchanges })}
+                                color="indigo"
+                                placeholder="Add Exchange..."
+                            />
+                        </div>
+                    </div>
+                </SectionCard>
+
+                <SectionCard title="Favorite Symbols" icon="fa-star">
+                    <div className="space-y-4">
+                        <div className="flex justify-between items-center mb-2">
+                            <p className="text-xs text-slate-500">Your prioritized assets for fast multi-market access.</p>
+
+                        </div>
+
+                        <div className="flex flex-wrap gap-2">
+                            {(userProfile.favoriteSymbols || []).map(symbol => {
+                                const asset = TRADING_ASSETS.find(a => a.symbol === symbol);
+                                return (
+                                    <div key={symbol} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-[#151A25] border border-slate-800 hover:border-amber-500/50 text-slate-300 font-bold text-xs group transition-all animate-in zoom-in-50 duration-200">
+                                        <i className={`${asset?.icon || 'fa-solid fa-star'} text-[10px] ${asset?.color || 'text-amber-500'}`}></i>
+                                        {symbol}
+                                        <button
+                                            type="button"
+                                            onClick={() => {
+                                                const newFavs = (userProfile.favoriteSymbols || []).filter(s => s !== symbol);
+                                                onUpdateProfile({ ...userProfile, favoriteSymbols: newFavs });
+                                            }}
+                                            className="text-slate-600 hover:text-rose-500 transition-colors ml-1 opacity-0 group-hover:opacity-100"
+                                        >
+                                            <i className="fa-solid fa-xmark"></i>
+                                        </button>
+                                    </div>
+                                );
+                            })}
+                            <div className="relative">
+                                <form
+                                    className="flex items-center gap-2"
+                                    onSubmit={(e) => {
+                                        e.preventDefault();
+                                        const val = symbolSearch.trim().toUpperCase();
+                                        if (val && !(userProfile.favoriteSymbols || []).includes(val)) {
+                                            onUpdateProfile({ ...userProfile, favoriteSymbols: [...(userProfile.favoriteSymbols || []), val] });
+                                            setSymbolSearch('');
+                                            setShowSuggestions(false);
+                                        }
+                                    }}
+                                >
+                                    <div className="relative flex items-center">
+                                        <i className="fa-solid fa-magnifying-glass absolute left-3 text-[10px] text-slate-500"></i>
+                                        <input
+                                            type="text"
+                                            placeholder="Add Asset..."
+                                            value={symbolSearch}
+                                            onFocus={() => setShowSuggestions(true)}
+                                            onChange={(e) => setSymbolSearch(e.target.value.toUpperCase())}
+                                            className="bg-[#0B0E14] border border-slate-800 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white uppercase outline-none focus:border-amber-500 transition-colors w-40"
+                                        />
+                                    </div>
+                                    <button
+                                        type="submit"
+                                        className="h-8 w-8 rounded-lg bg-amber-500/10 border border-amber-500/30 text-amber-500 flex items-center justify-center hover:bg-amber-500 hover:text-white transition-all shadow-lg"
+                                    >
+                                        <i className="fa-solid fa-plus text-xs"></i>
+                                    </button>
+                                </form>
+
+                                {showSuggestions && (
+                                    <>
+                                        <div className="fixed inset-0 z-40" onClick={() => setShowSuggestions(false)}></div>
+                                        <div className="absolute top-full left-0 mt-2 w-72 bg-[#151A25] border border-slate-700 rounded-xl shadow-2xl z-50 overflow-hidden animate-in fade-in slide-in-from-top-2 duration-200">
+                                            <div className="p-2 border-b border-slate-800 bg-[#0B0E14]/50">
+                                                <p className="text-[10px] font-bold text-slate-500 uppercase tracking-wider px-2">Suggestions</p>
+                                            </div>
+                                            <div className="max-h-60 overflow-y-auto custom-scrollbar">
+                                                {filteredSuggestions.map(asset => (
+                                                    <button
+                                                        key={asset.symbol}
+                                                        type="button"
+                                                        onClick={() => {
+                                                            if (!(userProfile.favoriteSymbols || []).includes(asset.symbol)) {
+                                                                onUpdateProfile({ ...userProfile, favoriteSymbols: [...(userProfile.favoriteSymbols || []), asset.symbol] });
+                                                            }
+                                                            setSymbolSearch('');
+                                                            setShowSuggestions(false);
+                                                        }}
+                                                        className="w-full flex items-center justify-between p-3 hover:bg-[#1E2330] transition-colors border-b border-slate-800 last:border-0"
+                                                    >
+                                                        <div className="flex items-center gap-3">
+                                                            <div className="w-8 h-8 rounded-lg bg-[#0B0E14] flex items-center justify-center border border-slate-700">
+                                                                <i className={`${asset.icon} text-sm ${asset.color}`}></i>
+                                                            </div>
+                                                            <div className="text-left">
+                                                                <p className="text-xs font-bold text-white mb-0.5">{asset.symbol}</p>
+                                                                <p className="text-[9px] text-slate-500 uppercase tracking-tight">{asset.name}</p>
+                                                            </div>
+                                                        </div>
+                                                        {(userProfile.favoriteSymbols || []).includes(asset.symbol) ? (
+                                                            <i className="fa-solid fa-check text-emerald-500 text-xs"></i>
+                                                        ) : (
+                                                            <i className="fa-solid fa-circle-plus text-slate-600 group-hover:text-amber-500 text-xs"></i>
+                                                        )}
+                                                    </button>
+                                                ))}
+                                                {filteredSuggestions.length === 0 && (
+                                                    <div className="p-4 text-center text-slate-600 text-[10px] italic">Press Enter to add "{symbolSearch}" as custom.</div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                </SectionCard>
 
                 <SectionCard title="Import / Export" icon="fa-file-csv">
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -324,8 +493,8 @@ const Settings: React.FC<SettingsProps> = ({
                         </button>
                     </div>
                 </div>
-            </div>
-        </div>
+            </div >
+        </div >
     );
 };
 
@@ -355,6 +524,95 @@ const Toggle = ({ label, checked, onChange, help }: { label: string, checked: bo
     </div>
 );
 
+const PresetEditor = ({ label, presets, onUpdate, color }: { label: string, presets: number[], onUpdate: (p: number[]) => void, color: string }) => {
+    const colorClasses: Record<string, string> = {
+        rose: 'bg-rose-500/10 border-rose-500/30 text-rose-400 focus-within:border-rose-500',
+        emerald: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 focus-within:border-emerald-500',
+        indigo: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 focus-within:border-indigo-500',
+        amber: 'bg-amber-500/10 border-amber-500/30 text-amber-400 focus-within:border-amber-500',
+    };
 
+    return (
+        <div className="space-y-3">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</h4>
+            <div className="flex flex-wrap gap-2">
+                {presets.map((p, i) => (
+                    <div key={i} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${colorClasses[color] || 'bg-slate-500/10 border-slate-500/30 text-slate-400'}`}>
+                        <span className="text-xs font-bold font-mono">{p}</span>
+                        <button
+                            onClick={() => onUpdate(presets.filter((_, idx) => idx !== i))}
+                            className="text-[10px] opacity-50 hover:opacity-100 transition-opacity"
+                        >
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                ))}
+            </div>
+            <div className="flex items-center gap-2">
+                <input
+                    type="number"
+                    step="any"
+                    placeholder="New..."
+                    className="bg-[#0B0E14] border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500 transition-colors w-24"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            const val = parseFloat(e.currentTarget.value);
+                            if (!isNaN(val) && !presets.includes(val)) {
+                                onUpdate([...presets, val].sort((a, b) => a - b));
+                                e.currentTarget.value = '';
+                            }
+                        }
+                    }}
+                />
+                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter italic">Press Enter</span>
+            </div>
+        </div>
+    );
+};
+
+const StringPresetEditor = ({ label, presets, onUpdate, color, placeholder }: { label: string, presets: string[], onUpdate: (p: string[]) => void, color: string, placeholder?: string }) => {
+    const colorClasses: Record<string, string> = {
+        rose: 'bg-rose-500/10 border-rose-500/30 text-rose-400 focus-within:border-rose-500',
+        emerald: 'bg-emerald-500/10 border-emerald-500/30 text-emerald-400 focus-within:border-emerald-500',
+        indigo: 'bg-indigo-500/10 border-indigo-500/30 text-indigo-400 focus-within:border-indigo-500',
+        amber: 'bg-amber-500/10 border-amber-500/30 text-amber-400 focus-within:border-amber-500',
+    };
+
+    return (
+        <div className="space-y-3">
+            <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">{label}</h4>
+            <div className="flex flex-wrap gap-2">
+                {presets.map((p, i) => (
+                    <div key={i} className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border transition-all ${colorClasses[color] || 'bg-slate-500/10 border-slate-500/30 text-slate-400'}`}>
+                        <span className="text-xs font-bold">{p}</span>
+                        <button
+                            onClick={() => onUpdate(presets.filter((_, idx) => idx !== i))}
+                            className="text-[10px] opacity-50 hover:opacity-100 transition-opacity"
+                        >
+                            <i className="fa-solid fa-xmark"></i>
+                        </button>
+                    </div>
+                ))}
+            </div>
+            <div className="flex items-center gap-2">
+                <input
+                    type="text"
+                    placeholder={placeholder || "New..."}
+                    className="bg-[#0B0E14] border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-white outline-none focus:border-indigo-500 transition-colors w-32"
+                    onKeyDown={(e) => {
+                        if (e.key === 'Enter') {
+                            const val = e.currentTarget.value.trim();
+                            if (val && !presets.includes(val)) {
+                                onUpdate([...presets, val].sort());
+                                e.currentTarget.value = '';
+                            }
+                        }
+                    }}
+                />
+                <span className="text-[9px] text-slate-600 font-bold uppercase tracking-tighter italic">Press Enter</span>
+            </div>
+        </div>
+    );
+};
 
 export default Settings;

@@ -255,6 +255,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
     // Filter State
     const [filterSymbol, setFilterSymbol] = useState('All');
+    const [filterExchange, setFilterExchange] = useState('All');
     const [filterStrategy, setFilterStrategy] = useState('All');
     const [filterSetup, setFilterSetup] = useState('All');
     const [filterSide, setFilterSide] = useState('All');
@@ -344,6 +345,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
     };
 
     const uniqueSymbols = useMemo(() => ['All', ...Array.from(new Set(trades.map(t => t.symbol)))].sort(), [trades]);
+    const uniqueExchanges = useMemo(() => ['All', ...Array.from(new Set(trades.map(t => t.exchange).filter((e): e is string => !!e)))].sort(), [trades]);
     const uniqueStrategies = useMemo(() => {
         const tradeStrategies = new Set(trades.map(t => t.strategy).filter((s): s is string => !!s));
         const playbookStrategies = strategies.filter(s => s.status === 'active').map(s => s.name);
@@ -370,13 +372,14 @@ const Analytics: React.FC<AnalyticsProps> = ({
     }, [tags, trades]);
 
     const resetFilters = () => {
-        setFilterSymbol('All'); setFilterStrategy('All'); setFilterSetup('All'); setFilterSide('All'); setFilterTag('All'); setFilterQuality('All');
+        setFilterSymbol('All'); setFilterExchange('All'); setFilterStrategy('All'); setFilterSetup('All'); setFilterSide('All'); setFilterTag('All'); setFilterQuality('All');
         setDateFilter({ type: 'LIFETIME' });
     };
 
     const filteredTrades = useMemo(() => {
         let data = [...trades];
         if (filterSymbol !== 'All') data = data.filter(t => t.symbol === filterSymbol);
+        if (filterExchange !== 'All') data = data.filter(t => t.exchange === filterExchange);
         if (filterStrategy !== 'All') data = data.filter(t => t.strategy === filterStrategy);
         if (filterSetup !== 'All') data = data.filter(t => t.setups?.includes(filterSetup));
         if (filterSide !== 'All') data = data.filter(t => t.side === filterSide);
@@ -433,8 +436,27 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
     const equityCurveStats = useMemo(() => {
         let balance = 0; let peak = 0; let maxDD = 0;
-        closedTrades.forEach(t => { balance += t.pnl || 0; if (balance > peak) peak = balance; const dd = peak - balance; if (dd > maxDD) maxDD = dd; });
-        return { maxDD };
+        let peakTime = 0;
+        let maxRecoveryTime = 0; // in milliseconds
+
+        closedTrades.forEach(t => {
+            const tradePnl = t.pnl || 0;
+            const tradeTime = new Date(t.exitDate || t.entryDate).getTime();
+            balance += tradePnl;
+
+            if (balance >= peak) {
+                if (peakTime > 0) {
+                    const recoveryTime = tradeTime - peakTime;
+                    if (recoveryTime > maxRecoveryTime) maxRecoveryTime = recoveryTime;
+                }
+                peak = balance;
+                peakTime = tradeTime;
+            } else {
+                const dd = peak - balance;
+                if (dd > maxDD) maxDD = dd;
+            }
+        });
+        return { maxDD, maxRecoveryTime };
     }, [closedTrades]);
 
     const recoveryFactor = equityCurveStats.maxDD > 0 ? netPnl / equityCurveStats.maxDD : 0;
@@ -601,6 +623,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
             byDay: aggregate(t => new Date(t.entryDate).toLocaleDateString('en-US', { weekday: 'long' })),
             byHour: aggregate(t => `${new Date(t.entryDate).getHours()}:00`),
             bySide: aggregate(t => t.side),
+            byExchange: aggregate(t => t.exchange || 'Manual'),
         };
     }, [filteredTrades]);
 
@@ -849,6 +872,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                 <i className="fa-regular fa-calendar text-slate-400"></i><span>{getDateFilterLabel()}</span><i className="fa-solid fa-chevron-down text-[10px] text-slate-500 ml-auto"></i>
             </button>
             <FilterDropdown label="Symbol" value={filterSymbol} onChange={setFilterSymbol} options={uniqueSymbols} />
+            <FilterDropdown label="Exchange" value={filterExchange} onChange={setFilterExchange} options={uniqueExchanges} />
             <FilterDropdown label="Strategy" value={filterStrategy} onChange={setFilterStrategy} options={uniqueStrategies} />
             <FilterDropdown label="Setup" value={filterSetup} onChange={setFilterSetup} options={uniqueSetups} />
             <FilterDropdown label="Tag" value={filterTag} onChange={setFilterTag} options={uniqueTags} />
@@ -1091,7 +1115,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                 <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
                                     <RiskCard label="Max Drawdown" value={currency.format(equityCurveStats.maxDD)} valueColor="text-rose-400" onInfoClick={() => setInfoModalKey('Max Drawdown')} />
                                     <RiskCard label="Avg. Holding Time" value={formatDuration(avgHoldTime)} valueColor="text-white" onInfoClick={() => setInfoModalKey('Avg. Holding Time')} />
-                                    <RiskCard label="Recovery Time" value="N/A" sub="days" onInfoClick={() => setInfoModalKey('Recovery Time')} />
+                                    <RiskCard label="Recovery Time" value={equityCurveStats.maxRecoveryTime > 0 ? formatDuration(equityCurveStats.maxRecoveryTime) : 'N/A'} onInfoClick={() => setInfoModalKey('Recovery Time')} />
                                     <RiskCard label="Return Volatility" value={stdDev.toFixed(2)} onInfoClick={() => setInfoModalKey('Return Volatility')} />
                                     <RiskCard label="Sortino Ratio" value={sortinoRatio.toFixed(2)} onInfoClick={() => setInfoModalKey('Sortino Ratio')} />
                                     <RiskCard label="Recovery Factor" value={recoveryFactor.toFixed(2)} onInfoClick={() => setInfoModalKey('CAGR vs. Max DD')} />
@@ -1136,6 +1160,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Entry Time</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Exit Time</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Symbol</th>
+                                        <th className="px-6 py-4 font-semibold whitespace-nowrap">Exchange</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap text-center">Side</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Tags</th>
                                         <th className="px-6 py-4 font-semibold whitespace-nowrap">Strategy</th>
@@ -1188,6 +1213,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                                     {trade.exitDate ? new Date(trade.exitDate).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '-'}
                                                 </td>
                                                 <td className="px-6 py-4 font-bold text-white">{trade.symbol}</td>
+                                                <td className="px-6 py-4 text-xs font-medium text-indigo-400/80">{trade.exchange || 'Manual'}</td>
                                                 <td className="px-6 py-4 text-center">
                                                     <span className={`px-2 py-1 rounded text-[10px] font-bold uppercase tracking-wide border ${trade.side === TradeSide.LONG
                                                         ? 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20'
@@ -1411,7 +1437,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                     <div className="flex items-center gap-4 mb-4">
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Breakdown By:</span>
                         <div className="flex bg-[#151A25] p-1 rounded-lg border border-slate-800">
-                            {['Symbol', 'Strategy', 'Day', 'Hour', 'Side'].map((view) => (
+                            {['Symbol', 'Exchange', 'Strategy', 'Day', 'Hour', 'Side'].map((view) => (
                                 <button
                                     key={view}
                                     onClick={() => setDeepDiveView(view as any)}
@@ -1511,6 +1537,27 @@ const Analytics: React.FC<AnalyticsProps> = ({
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Win-Rate by Duration</h3>
 
                             {(() => {
+                                const getAvgDuration = (ts: Trade[]) => {
+                                    const closedWithTime = ts.filter(t => t.status === TradeStatus.CLOSED && t.exitDate && t.exitDate !== t.entryDate);
+                                    if (closedWithTime.length === 0) return 0;
+                                    const totalMs = closedWithTime.reduce((acc, t) => {
+                                        return acc + (new Date(t.exitDate!).getTime() - new Date(t.entryDate).getTime());
+                                    }, 0);
+                                    return totalMs / closedWithTime.length;
+                                };
+
+                                const formatDurationPretty = (ms: number) => {
+                                    if (!ms || ms < 1000) return '0m';
+                                    const seconds = Math.floor(ms / 1000) % 60;
+                                    const minutes = Math.floor(ms / 60000) % 60;
+                                    const hours = Math.floor(ms / 3600000) % 24;
+                                    const days = Math.floor(ms / 86400000);
+                                    if (days > 0) return `${days}d ${hours}h`;
+                                    if (hours > 0) return `${hours}h ${minutes}m`;
+                                    if (minutes > 0) return `${minutes}m ${seconds}s`;
+                                    return `${seconds}s`;
+                                };
+
                                 const intradayTrades = filteredTrades.filter(t => {
                                     if (!t.exitDate) return false;
                                     const entry = new Date(t.entryDate);
@@ -1534,26 +1581,33 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                 const multidayWR = getWR(multidayTrades);
 
                                 return (
-                                    <div className="space-y-6 w-full">
-                                        <div>
-                                            <div className="flex justify-between text-xs mb-2 font-bold">
-                                                <span className="text-slate-500">Intraday</span>
-                                                <span className="text-white">{Math.round(intradayWR)}%</span>
+                                    <>
+                                        <div className="space-y-6 w-full">
+                                            <div>
+                                                <div className="flex justify-between text-xs mb-2 font-bold">
+                                                    <span className="text-slate-500">Intraday</span>
+                                                    <span className="text-white">{Math.round(intradayWR)}%</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${intradayWR}%` }}></div>
+                                                </div>
                                             </div>
-                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-purple-500 to-indigo-500" style={{ width: `${intradayWR}%` }}></div>
+                                            <div>
+                                                <div className="flex justify-between text-xs mb-2 font-bold">
+                                                    <span className="text-slate-500">Multiday</span>
+                                                    <span className="text-white">{Math.round(multidayWR)}%</span>
+                                                </div>
+                                                <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                                                    <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500" style={{ width: `${multidayWR}%` }}></div>
+                                                </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <div className="flex justify-between text-xs mb-2 font-bold">
-                                                <span className="text-slate-500">Multiday</span>
-                                                <span className="text-white">{Math.round(multidayWR)}%</span>
-                                            </div>
-                                            <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
-                                                <div className="h-full bg-gradient-to-r from-pink-500 to-purple-500" style={{ width: `${multidayWR}%` }}></div>
-                                            </div>
+
+                                        {/* Shared Duration Helpers for subsequent cards */}
+                                        <div className="hidden" data-helpers="duration">
+                                            {/* Logic only, no UI */}
                                         </div>
-                                    </div>
+                                    </>
                                 );
                             })()}
                         </div>
@@ -1566,23 +1620,27 @@ const Analytics: React.FC<AnalyticsProps> = ({
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Average Hold Time</h3>
 
                             {(() => {
+                                // Re-using logic (manually since it's inside another IFFE, or just repeating for now to be safe with React scope)
                                 const getAvgDuration = (ts: Trade[]) => {
-                                    if (ts.length === 0) return 0;
-                                    const totalMs = ts.reduce((acc, t) => {
-                                        if (!t.exitDate) return acc;
-                                        return acc + (new Date(t.exitDate).getTime() - new Date(t.entryDate).getTime());
+                                    const closedWithTime = ts.filter(t => t.status === TradeStatus.CLOSED && t.exitDate);
+                                    if (closedWithTime.length === 0) return 0;
+                                    const totalMs = closedWithTime.reduce((acc, t) => {
+                                        const dur = new Date(t.exitDate!).getTime() - new Date(t.entryDate).getTime();
+                                        return acc + Math.max(0, dur);
                                     }, 0);
-                                    return totalMs / ts.length;
+                                    return totalMs / closedWithTime.length;
                                 };
 
-                                const formatDuration = (ms: number) => {
-                                    if (!ms) return '0m';
+                                const formatDurationPretty = (ms: number) => {
+                                    if (!ms || ms < 1000) return '0m';
+                                    const seconds = Math.floor(ms / 1000) % 60;
                                     const minutes = Math.floor(ms / 60000) % 60;
                                     const hours = Math.floor(ms / 3600000) % 24;
                                     const days = Math.floor(ms / 86400000);
                                     if (days > 0) return `${days}d ${hours}h`;
                                     if (hours > 0) return `${hours}h ${minutes}m`;
-                                    return `${minutes}m`;
+                                    if (minutes > 0) return `${minutes}m ${seconds}s`; // Detailed for short duration
+                                    return `${seconds}s`;
                                 };
 
                                 const wins = filteredTrades.filter(t => (t.pnl || 0) > 0);
@@ -1590,8 +1648,6 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
                                 const avgWinDur = getAvgDuration(wins);
                                 const avgLossDur = getAvgDuration(losses);
-
-                                // Normalize for progress bar (cap at max of the two * 1.2)
                                 const max = Math.max(avgWinDur, avgLossDur, 1) * 1.2;
 
                                 return (
@@ -1599,7 +1655,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                         <div>
                                             <div className="flex justify-between text-xs mb-2 font-bold">
                                                 <span className="text-slate-500">Wins</span>
-                                                <span className="text-white font-mono">{formatDuration(avgWinDur)}</span>
+                                                <span className="text-white font-mono">{formatDurationPretty(avgWinDur)}</span>
                                             </div>
                                             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                                                 <div className="h-full bg-emerald-500" style={{ width: `${(avgWinDur / max) * 100}%` }}></div>
@@ -1608,7 +1664,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                         <div>
                                             <div className="flex justify-between text-xs mb-2 font-bold">
                                                 <span className="text-slate-500">Losses</span>
-                                                <span className="text-white font-mono">{formatDuration(avgLossDur)}</span>
+                                                <span className="text-white font-mono">{formatDurationPretty(avgLossDur)}</span>
                                             </div>
                                             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                                                 <div className="h-full bg-rose-500" style={{ width: `${(avgLossDur / max) * 100}%` }}></div>
@@ -1624,26 +1680,29 @@ const Analytics: React.FC<AnalyticsProps> = ({
                             <div className="absolute top-0 right-0 p-4 opacity-20">
                                 <i className="fa-solid fa-layer-group text-4xl text-indigo-500"></i>
                             </div>
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Position Type</h3>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 absolute top-6 left-6">Position Type Duration</h3>
 
                             {(() => {
                                 const getAvgDuration = (ts: Trade[]) => {
-                                    if (ts.length === 0) return 0;
-                                    const totalMs = ts.reduce((acc, t) => {
-                                        if (!t.exitDate) return acc;
-                                        return acc + (new Date(t.exitDate).getTime() - new Date(t.entryDate).getTime());
+                                    const closedWithTime = ts.filter(t => t.status === TradeStatus.CLOSED && t.exitDate);
+                                    if (closedWithTime.length === 0) return 0;
+                                    const totalMs = closedWithTime.reduce((acc, t) => {
+                                        const dur = new Date(t.exitDate!).getTime() - new Date(t.entryDate).getTime();
+                                        return acc + Math.max(0, dur);
                                     }, 0);
-                                    return totalMs / ts.length;
+                                    return totalMs / closedWithTime.length;
                                 };
 
-                                const formatDuration = (ms: number) => {
-                                    if (!ms) return '0m';
+                                const formatDurationPretty = (ms: number) => {
+                                    if (!ms || ms < 1000) return '0m';
+                                    const seconds = Math.floor(ms / 1000) % 60;
                                     const minutes = Math.floor(ms / 60000) % 60;
                                     const hours = Math.floor(ms / 3600000) % 24;
                                     const days = Math.floor(ms / 86400000);
                                     if (days > 0) return `${days}d ${hours}h`;
                                     if (hours > 0) return `${hours}h ${minutes}m`;
-                                    return `${minutes}m`;
+                                    if (minutes > 0) return `${minutes}m ${seconds}s`;
+                                    return `${seconds}s`;
                                 };
 
                                 const longs = filteredTrades.filter(t => t.side === TradeSide.LONG);
@@ -1651,7 +1710,6 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
                                 const avgLongDur = getAvgDuration(longs);
                                 const avgShortDur = getAvgDuration(shorts);
-
                                 const max = Math.max(avgLongDur, avgShortDur, 1) * 1.2;
 
                                 return (
@@ -1659,7 +1717,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                         <div>
                                             <div className="flex justify-between text-xs mb-2 font-bold">
                                                 <span className="text-slate-500">Longs</span>
-                                                <span className="text-white font-mono">{formatDuration(avgLongDur)}</span>
+                                                <span className="text-white font-mono">{formatDurationPretty(avgLongDur)}</span>
                                             </div>
                                             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                                                 <div className="h-full bg-blue-500" style={{ width: `${(avgLongDur / max) * 100}%` }}></div>
@@ -1668,7 +1726,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
                                         <div>
                                             <div className="flex justify-between text-xs mb-2 font-bold">
                                                 <span className="text-slate-500">Shorts</span>
-                                                <span className="text-white font-mono">{formatDuration(avgShortDur)}</span>
+                                                <span className="text-white font-mono">{formatDurationPretty(avgShortDur)}</span>
                                             </div>
                                             <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                                                 <div className="h-full bg-indigo-500" style={{ width: `${(avgShortDur / max) * 100}%` }}></div>

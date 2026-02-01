@@ -29,11 +29,11 @@ import { Trade, View, UserProfile, Tag, ProfitGoals, RiskSettings, FocusTask, Tr
 // --- Trader Levels ---
 const TRADER_LEVELS = [
   { name: 'Novice', minPF: 0, maxDD: 100, minRR: 0, minTrades: 0, color: 'text-slate-500', shadow: 'shadow-slate-500/50', desc: 'Survival & Edge Repair' },
-  { name: 'Survivor', minPF: 1.2, maxDD: 25, minRR: 0.1, minTrades: 5, color: 'text-cyan-400', shadow: 'shadow-cyan-400/50', desc: 'Basic Consistency' },
-  { name: 'Consistent', minPF: 1.5, maxDD: 20, minRR: 0.25, minTrades: 15, color: 'text-emerald-400', shadow: 'shadow-emerald-400/50', desc: 'Sustainable Edge' },
-  { name: 'Warrior', minPF: 2.0, maxDD: 15, minRR: 0.45, minTrades: 30, color: 'text-amber-400', shadow: 'shadow-amber-400/50', desc: 'High-Quality Asymmetry' },
-  { name: 'Elite', minPF: 2.8, maxDD: 12, minRR: 0.8, minTrades: 50, color: 'text-rose-400', shadow: 'shadow-rose-400/50', desc: 'Rare Excellence' },
-  { name: 'GOD', minPF: 4.0, maxDD: 10, minRR: 1.4, minTrades: 100, color: 'text-purple-400', shadow: 'shadow-purple-500/80', desc: 'Unicorn Status' },
+  { name: 'Survivor', minPF: 1.2, maxDD: 25, minRR: 0.1, minTrades: 2, color: 'text-cyan-400', shadow: 'shadow-cyan-400/50', desc: 'Basic Consistency' },
+  { name: 'Consistent', minPF: 1.5, maxDD: 20, minRR: 0.25, minTrades: 5, color: 'text-emerald-400', shadow: 'shadow-emerald-400/50', desc: 'Sustainable Edge' },
+  { name: 'Warrior', minPF: 2.0, maxDD: 15, minRR: 0.45, minTrades: 10, color: 'text-amber-400', shadow: 'shadow-amber-400/50', desc: 'High-Quality Asymmetry' },
+  { name: 'Elite', minPF: 2.8, maxDD: 12, minRR: 0.8, minTrades: 20, color: 'text-rose-400', shadow: 'shadow-rose-400/50', desc: 'Rare Excellence' },
+  { name: 'GOD', minPF: 4.0, maxDD: 10, minRR: 1.4, minTrades: 50, color: 'text-purple-400', shadow: 'shadow-purple-500/80', desc: 'Unicorn Status' },
 ];
 
 const getTraderLevel = (pf: number, dd: number, rr: number, tradeCount: number) => {
@@ -177,19 +177,21 @@ const AppContent: React.FC = () => {
   }, [activeProfile.theme]);
 
   // --- Calculations ---
+  const activeAccount = useMemo(() => accounts.find(a => a.id === activeAccountId) || accounts[0], [accounts, activeAccountId]);
+
   const { visibleTrades, visibleTransactions } = useMemo(() => {
-    // Simplified filter for single account MVP or filter by activeAccountId if implemented in future
-    return { visibleTrades: trades, visibleTransactions: transactions };
-  }, [trades, transactions]);
+    // If we have an active account, filter by it. Otherwise show all.
+    const tradesToFilter = activeAccount ? trades.filter(t => t.accountId === activeAccount.id) : trades;
+    const transactionsToFilter = activeAccount ? transactions.filter(t => t.accountId === activeAccount.id) : transactions;
+    return { visibleTrades: tradesToFilter, visibleTransactions: transactionsToFilter };
+  }, [trades, transactions, activeAccount]);
 
   const portfolioBalance = useMemo(() => {
-    const realizedPnL = visibleTrades.reduce((acc, t) => acc + (t.pnl || 0), 0);
-    // Add transaction amounts (deposits - withdrawals)
-    const transactionTotal = visibleTransactions.reduce((acc, t) => {
-      return acc + (t.type === 'DEPOSIT' ? t.amount : -t.amount);
-    }, 0);
-    return 10000 + realizedPnL + transactionTotal; // Base 10k + PnL + Transactions
-  }, [visibleTrades, visibleTransactions]);
+    const totalDeposits = visibleTransactions.filter(t => t.type === 'DEPOSIT').reduce((acc, t) => acc + t.amount, 0);
+    const totalWithdrawals = visibleTransactions.filter(t => t.type === 'WITHDRAWAL').reduce((acc, t) => acc + t.amount, 0);
+    const totalRealizedPnL = visibleTrades.filter(t => t.status === TradeStatus.CLOSED).reduce((acc, t) => acc + (t.pnl || 0), 0);
+    return totalDeposits - totalWithdrawals + totalRealizedPnL;
+  }, [visibleTransactions, visibleTrades]);
 
   const currentRank = useMemo(() => {
     const closed = visibleTrades.filter(t => t.status === TradeStatus.CLOSED);
@@ -215,7 +217,11 @@ const AppContent: React.FC = () => {
   }, [visibleTrades]);
 
   const handleAddTrade = async (trade: Trade) => {
-    await addTrade(trade);
+    await addTrade({
+      ...trade,
+      accountId: activeAccountId,
+      exchange: activeAccount?.exchange || 'Manual'
+    });
     setShowTradeForm(false);
   };
 
@@ -272,6 +278,16 @@ const AppContent: React.FC = () => {
 
       return { ...prev, [category]: [...existing, newTag] };
     });
+  };
+
+  const handleToggleFavoriteSymbol = (symbol: string) => {
+    const currentFavs = activeProfile.favoriteSymbols || [];
+    const isFav = currentFavs.includes(symbol);
+    const newFavs = isFav
+      ? currentFavs.filter(s => s !== symbol)
+      : [...currentFavs, symbol];
+
+    updateProfile({ favoriteSymbols: newFavs });
   };
 
   return (
@@ -408,6 +424,8 @@ const AppContent: React.FC = () => {
             onDeleteTransaction={deleteTransaction}
             activeAccountId={activeAccountId}
             onSelectAccount={setActiveAccountId}
+            availableExchanges={[...(activeProfile.exchanges || [])]}
+            onAddExchange={(name: string) => updateProfile({ exchanges: [...(activeProfile.exchanges || []), name] })}
             baseCurrency='USD'
           />
         )}
@@ -454,6 +472,7 @@ const AppContent: React.FC = () => {
             onUpdateProfile={updateProfile}
             trades={trades}
             onImportTrades={importTrades}
+            setActiveView={setActiveView}
             onClearTrades={() => {
               confirmDelete('Are you sure you want to delete ALL trades? This cannot be undone.', () => {
                 const tradesToRestore = [...trades];
@@ -485,7 +504,20 @@ const AppContent: React.FC = () => {
           availableTags={availableTags}
           onAddGlobalTag={handleAddGlobalTag}
           portfolioBalance={portfolioBalance}
-          userFees={activeProfile.fees}
+          userFees={activeAccount?.fees || activeProfile.fees}
+          slPresets={activeAccount?.favoriteSymbols?.length ? activeProfile.slPresets : activeProfile.slPresets} // Placeholder if we want account specifics later
+          tpPresets={activeProfile.tpPresets}
+          leveragePresets={activeProfile.leveragePresets}
+          riskPresets={activeProfile.riskPresets}
+          favoriteSymbols={activeProfile.favoriteSymbols || []}
+          onToggleFavoriteSymbol={handleToggleFavoriteSymbol}
+          availableExchanges={[...(activeProfile.exchanges || [])]}
+          defaultExchange={activeAccount?.exchange || activeProfile.primaryExchange || 'Binance'}
+          onAddExchange={(name: string) => updateProfile({ exchanges: [...(activeProfile.exchanges || []), name] })}
+          onJumpToPortfolio={() => {
+            setActiveView('portfolio');
+            setShowTradeForm(false);
+          }}
         />
       )}
     </div>

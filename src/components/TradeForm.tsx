@@ -1,6 +1,7 @@
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { Trade, TradeSide, TradeStatus, Strategy, FeeConfig, Tag, TAG_COLORS, TradeType, RiskState } from '../types';
+import { TRADING_ASSETS } from '../constants/assets';
 
 interface TradeFormProps {
     // Backward compatible props
@@ -14,6 +15,7 @@ interface TradeFormProps {
     availableTags?: Record<string, Tag[]>;
     onAddGlobalTag?: (category: string, tagName: string) => void;
     availableExchanges?: string[];
+    onAddExchange?: (name: string) => void;
     defaultExchange?: string;
     userTimezone?: string;
     portfolioBalance?: number;
@@ -24,52 +26,16 @@ interface TradeFormProps {
     baseCurrency?: string; // Legacy prop
     initialSymbol?: string; // Optional prop to pre-fill symbol
     trades?: Trade[]; // For Data mode analysis
+    slPresets?: number[];
+    tpPresets?: number[];
+    leveragePresets?: number[];
+    riskPresets?: number[];
+    favoriteSymbols?: string[];
+    onToggleFavoriteSymbol?: (symbol: string) => void;
+    onJumpToPortfolio?: () => void;
 }
 
-const TRADING_ASSETS = [
-    // Crypto
-    { symbol: 'BTC', name: 'Bitcoin', icon: 'fa-brands fa-bitcoin', color: 'text-amber-500', category: 'Crypto' },
-    { symbol: 'ETH', name: 'Ethereum', icon: 'fa-brands fa-ethereum', color: 'text-indigo-400', category: 'Crypto' },
-    { symbol: 'SOL', name: 'Solana', icon: 'fa-solid fa-layer-group', color: 'text-emerald-400', category: 'Crypto' },
-    { symbol: 'XRP', name: 'Ripple', icon: 'fa-solid fa-droplet', color: 'text-blue-400', category: 'Crypto' },
-    { symbol: 'BNB', name: 'Binance Coin', icon: 'fa-solid fa-coins', color: 'text-yellow-400', category: 'Crypto' },
-    { symbol: 'ADA', name: 'Cardano', icon: 'fa-solid fa-certificate', color: 'text-blue-600', category: 'Crypto' },
-    { symbol: 'DOGE', name: 'Dogecoin', icon: 'fa-solid fa-dog', color: 'text-amber-300', category: 'Crypto' },
-    { symbol: 'TRX', name: 'Tron', icon: 'fa-solid fa-diamond', color: 'text-rose-500', category: 'Crypto' },
-    { symbol: 'DOT', name: 'Polkadot', icon: 'fa-solid fa-circle-dot', color: 'text-pink-500', category: 'Crypto' },
-    { symbol: 'MATIC', name: 'Polygon', icon: 'fa-solid fa-draw-polygon', color: 'text-purple-500', category: 'Crypto' },
-    { symbol: 'LTC', name: 'Litecoin', icon: 'fa-solid fa-litecoin-sign', color: 'text-slate-300', category: 'Crypto' },
-    { symbol: 'SHIB', name: 'Shiba Inu', icon: 'fa-solid fa-shield-dog', color: 'text-orange-400', category: 'Crypto' },
-    { symbol: 'AVAX', name: 'Avalanche', icon: 'fa-solid fa-mountain', color: 'text-rose-500', category: 'Crypto' },
-    { symbol: 'LINK', name: 'Chainlink', icon: 'fa-solid fa-link', color: 'text-blue-500', category: 'Crypto' },
-    { symbol: 'NEAR', name: 'Near Protocol', icon: 'fa-solid fa-circle', color: 'text-slate-200', category: 'Crypto' },
-    { symbol: 'ATOM', name: 'Cosmos', icon: 'fa-solid fa-atom', color: 'text-indigo-300', category: 'Crypto' },
-    { symbol: 'UNI', name: 'Uniswap', icon: 'fa-solid fa-horse', color: 'text-pink-400', category: 'Crypto' },
-    { symbol: 'PEPE', name: 'Pepe', icon: 'fa-solid fa-frog', color: 'text-emerald-600', category: 'Crypto' },
-    { symbol: 'FTM', name: 'Fantom', icon: 'fa-solid fa-ghost', color: 'text-blue-500', category: 'Crypto' },
-    { symbol: 'INJ', name: 'Injective', icon: 'fa-solid fa-syringe', color: 'text-blue-400', category: 'Crypto' },
-    { symbol: 'TIA', name: 'Celestia', icon: 'fa-solid fa-bahai', color: 'text-indigo-400', category: 'Crypto' },
-    { symbol: 'SEI', name: 'Sei', icon: 'fa-solid fa-water', color: 'text-rose-500', category: 'Crypto' },
-    { symbol: 'JUP', name: 'Jupiter', icon: 'fa-solid fa-planet-ring', color: 'text-emerald-400', category: 'Crypto' },
-    { symbol: 'RNDR', name: 'Render Token', icon: 'fa-solid fa-square-person-confined', color: 'text-orange-500', category: 'Crypto' },
-    { symbol: 'FET', name: 'Fetch.ai', icon: 'fa-solid fa-brain', color: 'text-indigo-600', category: 'Crypto' },
 
-    // Forex
-    { symbol: 'EURUSD', name: 'Euro / US Dollar', icon: 'fa-solid fa-euro-sign', color: 'text-blue-400', category: 'Forex' },
-    { symbol: 'GBPUSD', name: 'British Pound / US Dollar', icon: 'fa-solid fa-sterling-sign', color: 'text-indigo-500', category: 'Forex' },
-    { symbol: 'USDJPY', name: 'US Dollar / Japanese Yen', icon: 'fa-solid fa-yen-sign', color: 'text-rose-400', category: 'Forex' },
-    { symbol: 'AUDUSD', name: 'Australian Dollar / US Dollar', icon: 'fa-solid fa-austral-sign', color: 'text-emerald-500', category: 'Forex' },
-    { symbol: 'USDCAD', name: 'US Dollar / Canadian Dollar', icon: 'fa-solid fa-dollar-sign', color: 'text-rose-500', category: 'Forex' },
-    { symbol: 'USDCHF', name: 'US Dollar / Swiss Franc', icon: 'fa-solid fa-franc-sign', color: 'text-blue-300', category: 'Forex' },
-    { symbol: 'NZDUSD', name: 'NZ Dollar / US Dollar', icon: 'fa-solid fa-dollar-sign', color: 'text-teal-400', category: 'Forex' },
-
-    // Commodities
-    { symbol: 'XAUUSD', name: 'Gold / US Dollar', icon: 'fa-solid fa-ring', color: 'text-amber-400', category: 'Commodities' },
-    { symbol: 'XAGUSD', name: 'Silver / US Dollar', icon: 'fa-solid fa-coins', color: 'text-slate-400', category: 'Commodities' },
-    { symbol: 'USOIL', name: 'Crude Oil WTI', icon: 'fa-solid fa-droplet', color: 'text-slate-800', category: 'Commodities' },
-    { symbol: 'UKOIL', name: 'Brent Crude Oil', icon: 'fa-solid fa-oil-can', color: 'text-slate-700', category: 'Commodities' },
-    { symbol: 'NG', name: 'Natural Gas', icon: 'fa-solid fa-fire-flame-simple', color: 'text-blue-200', category: 'Commodities' },
-];
 
 interface InputGroupProps {
     label: string;
@@ -98,6 +64,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
     availableTags = {},
     onAddGlobalTag,
     availableExchanges = ['Binance'],
+    onAddExchange,
     defaultExchange = 'Binance',
     userTimezone = 'UTC',
     portfolioBalance = 0,
@@ -106,7 +73,14 @@ const TradeForm: React.FC<TradeFormProps> = ({
     onEditFees,
     riskState,
     initialSymbol = '',
-    trades = []
+    trades = [],
+    slPresets = [1, 2, 3, 4, 5, 6],
+    tpPresets = [1, 2, 3, 4, 5, 6],
+    leveragePresets = [1, 5, 10, 25, 50, 100, 500, 1000, 2000],
+    riskPresets = [0.5, 1, 2, 3, 5],
+    favoriteSymbols = [],
+    onToggleFavoriteSymbol,
+    onJumpToPortfolio
 }) => {
     // Use onSave if provided, otherwise fall back to onSubmit for backward compatibility
     const handleSave = onSave || onSubmit || (() => { });
@@ -166,11 +140,15 @@ const TradeForm: React.FC<TradeFormProps> = ({
 
     const [slPercent, setSlPercent] = useState('');
     const [tpPercent, setTpPercent] = useState('');
+    const [riskPercent, setRiskPercent] = useState('1'); // Default 1% risk
+    const [isCalculatingByRisk, setIsCalculatingByRisk] = useState(false);
     const [showSuggestions, setShowSuggestions] = useState(false);
     const [activeAsset, setActiveAsset] = useState<typeof TRADING_ASSETS[0] | null>(null);
     const [isFetchingEntry, setIsFetchingEntry] = useState(false);
     const [isFetchingExit, setIsFetchingExit] = useState(false);
     const [binanceSymbols, setBinanceSymbols] = useState<any[]>([]);
+    const [showAddExchange, setShowAddExchange] = useState(false);
+    const [newExchangeName, setNewExchangeName] = useState('');
 
     // Tag Inputs
     const [entryReasonInput, setEntryReasonInput] = useState('');
@@ -190,7 +168,10 @@ const TradeForm: React.FC<TradeFormProps> = ({
         positionSize: 0,
         estFees: 0,
         liquidationPrice: 0,
-        quantity: 0
+        quantity: 0,
+        pips: 0,
+        lots: 0,
+        pipValue: 0
     });
 
     const suggestionsRef = useRef<HTMLDivElement>(null);
@@ -208,12 +189,29 @@ const TradeForm: React.FC<TradeFormProps> = ({
     };
 
     useEffect(() => {
-        const capital = parseFloat(formData.capital) || 0;
+        let capital = parseFloat(formData.capital) || 0;
         const entry = parseFloat(formData.entryPrice) || 0;
+        const sl = parseFloat(formData.stopLoss) || 0;
         const lev = formData.leverage || 1;
+        const risk = parseFloat(riskPercent) || 0;
 
-        const positionSize = capital * lev;
-        const qty = entry > 0 ? positionSize / entry : 0;
+        let qty = 0;
+        let positionSize = 0;
+
+        if (isCalculatingByRisk && entry > 0 && risk > 0 && portfolioBalance > 0) {
+            // In this mode, Risk % acts as Margin Allocation
+            const marginAllocation = (portfolioBalance * risk) / 100;
+            positionSize = marginAllocation * lev;
+            qty = entry > 0 ? positionSize / entry : 0;
+
+            // Sync the capital (margin) field to the allocated margin
+            if (Math.abs(marginAllocation - (parseFloat(formData.capital) || 0)) > 0.01) {
+                setFormData(prev => ({ ...prev, capital: marginAllocation.toFixed(2) }));
+            }
+        } else {
+            positionSize = capital * lev;
+            qty = entry > 0 ? positionSize / entry : 0;
+        }
 
         const activeFeeConfig = (formData.exchange && exchangeFees?.[formData.exchange]) || userFees;
 
@@ -222,7 +220,8 @@ const TradeForm: React.FC<TradeFormProps> = ({
             fees = (activeFeeConfig.taker || 0) * 2;
         } else {
             const rate = (activeFeeConfig.taker || 0.05) / 100;
-            fees = (positionSize * rate) * 2;
+            const effectivePosSize = isCalculatingByRisk ? positionSize : (parseFloat(formData.capital) || 0) * lev;
+            fees = (effectivePosSize * rate) * 2;
         }
 
         let liq = 0;
@@ -234,13 +233,36 @@ const TradeForm: React.FC<TradeFormProps> = ({
             }
         }
 
+        // Pip and Lot Calculation
+        let pips = 0;
+        let lots = 0;
+        let pipValue = 0;
+
+        if (entry > 0) {
+            const isYenPair = formData.symbol.includes('JPY');
+            const pipSize = isYenPair ? 0.01 : 0.0001;
+
+            if (sl > 0) {
+                pips = Math.abs(entry - sl) / pipSize;
+            }
+
+            // Standard Lot = 100k units
+            lots = qty / 100000;
+
+            // Pip Value = Quantity * Pip Size
+            pipValue = qty * pipSize;
+        }
+
         setMetrics({
-            positionSize,
+            positionSize: positionSize,
             estFees: fees,
             liquidationPrice: Math.max(0, liq),
-            quantity: qty
+            quantity: qty,
+            pips: pips,
+            lots: lots,
+            pipValue: pipValue
         });
-    }, [formData.capital, formData.entryPrice, formData.leverage, formData.side, userFees, exchangeFees, formData.exchange]);
+    }, [formData.capital, formData.entryPrice, formData.stopLoss, formData.leverage, formData.side, userFees, exchangeFees, formData.exchange, riskPercent, isCalculatingByRisk, portfolioBalance, activeAsset]);
 
     useEffect(() => {
         const fetchBinanceSymbols = async () => {
@@ -343,6 +365,8 @@ const TradeForm: React.FC<TradeFormProps> = ({
             setups: selectedSetups,
             entryChecklist: checkedRules,
             riskReward: calculateRR(),
+            fees: metrics.estFees,
+            source: 'MANUAL',
         };
 
         handleSave(newTrade);
@@ -456,22 +480,67 @@ const TradeForm: React.FC<TradeFormProps> = ({
             let fsym = normalizedSymbol;
             let tsym = 'USD';
 
-            // Split common pairs like EURUSD or XAUUSD
-            if (normalizedSymbol.length === 6) {
+            // Common commodity/asset mappings for CryptoCompare
+            const COMMODITY_MAP: Record<string, string> = {
+                'GOLD': 'XAU', 'SILVER': 'XAG', 'OIL': 'WTI', 'USOIL': 'WTI', 'UKOIL': 'UKOIL', 'NG': 'NG'
+            };
+
+            if (COMMODITY_MAP[normalizedSymbol]) {
+                fsym = COMMODITY_MAP[normalizedSymbol];
+            } else if (normalizedSymbol.length === 6) {
+                // Split common pairs like EURUSD, GBPAUD
                 fsym = normalizedSymbol.substring(0, 3);
                 tsym = normalizedSymbol.substring(3);
+            } else if (normalizedSymbol.length === 7 && normalizedSymbol.endsWith('USDT')) {
+                fsym = normalizedSymbol.substring(0, 4);
+                tsym = 'USDT';
+            } else if (normalizedSymbol.endsWith('USDT')) {
+                fsym = normalizedSymbol.replace('USDT', '');
+                tsym = 'USDT';
             } else if (normalizedSymbol.endsWith('USD')) {
                 fsym = normalizedSymbol.replace('USD', '');
+                tsym = 'USD';
             }
 
             const ccResponse = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${fsym}&tsyms=${tsym},USDT,USD`);
             if (ccResponse.ok) {
                 const ccData = await ccResponse.json();
-                const priceVal = ccData[tsym] || ccData.USDT || ccData.USD;
-                if (priceVal) {
-                    const price = priceVal.toString();
-                    if (field === 'entry') handleEntryPriceChange(price);
-                    else setFormData(prev => ({ ...prev, exitPrice: price }));
+
+                if (ccData.Response === 'Error') {
+                    // Try raw symbol if split failed
+                    const rawResponse = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${normalizedSymbol}&tsyms=USD,USDT`);
+                    if (rawResponse.ok) {
+                        const rawData = await rawResponse.json();
+                        const price = rawData.USD || rawData.USDT;
+                        if (price) {
+                            if (field === 'entry') handleEntryPriceChange(price.toString());
+                            else setFormData(prev => ({ ...prev, exitPrice: price.toString() }));
+                            return;
+                        }
+                    }
+                } else {
+                    const priceVal = ccData[tsym] || ccData.USDT || ccData.USD;
+
+                    // If it's a forex pair and we didn't get a value, try inverted
+                    if (!priceVal && (normalizedSymbol.length === 6 || normalizedSymbol.length === 7)) {
+                        const invResponse = await fetch(`https://min-api.cryptocompare.com/data/price?fsym=${tsym}&tsyms=${fsym}`);
+                        if (invResponse.ok) {
+                            const invData = await invResponse.ok ? await invResponse.json() : null;
+                            if (invData && invData[fsym]) {
+                                const price = (1 / invData[fsym]).toString();
+                                if (field === 'entry') handleEntryPriceChange(price);
+                                else setFormData(prev => ({ ...prev, exitPrice: price }));
+                                return;
+                            }
+                        }
+                    }
+
+                    if (priceVal) {
+                        const price = priceVal.toString();
+                        if (field === 'entry') handleEntryPriceChange(price);
+                        else setFormData(prev => ({ ...prev, exitPrice: price }));
+                        return; // Found a price
+                    }
                 }
             }
         } catch (error) { console.error("Failed to fetch price", error); }
@@ -498,21 +567,52 @@ const TradeForm: React.FC<TradeFormProps> = ({
 
     const filteredAssets = useMemo(() => {
         const query = formData.symbol.toUpperCase();
-        if (!query) return TRADING_ASSETS.slice(0, 10);
 
-        // 1. Filter predefined assets
-        const predefined = TRADING_ASSETS.filter(
-            asset => asset.symbol.includes(query) || asset.name.toUpperCase().includes(query)
-        );
+        let assets = [...TRADING_ASSETS];
 
-        // 2. Filter Binance symbols if search query exists
-        const dynamic = binanceSymbols.filter(
-            s => (s.symbol.includes(query) || s.name.toUpperCase().includes(query)) &&
-                !TRADING_ASSETS.some(t => t.symbol === s.symbol)
-        ).slice(0, 15); // Limit dynamic results for cleaner UI
+        // Add dynamic binance symbols that aren't in TRADING_ASSETS
+        binanceSymbols.forEach(s => {
+            if (!assets.some(a => a.symbol === s.symbol)) {
+                assets.push(s);
+            }
+        });
 
-        return [...predefined, ...dynamic];
-    }, [formData.symbol, binanceSymbols]);
+        // Search filtering
+        if (query) {
+            assets = assets.filter(
+                asset => asset.symbol.includes(query) || asset.name.toUpperCase().includes(query)
+            );
+        } else {
+            assets = assets.slice(0, 20);
+        }
+
+        // Sort by Favorites first, then Alphabetical
+        return assets.sort((a, b) => {
+            const aFav = favoriteSymbols.includes(a.symbol);
+            const bFav = favoriteSymbols.includes(b.symbol);
+            if (aFav && !bFav) return -1;
+            if (!aFav && bFav) return 1;
+            return a.symbol.localeCompare(b.symbol);
+        });
+    }, [formData.symbol, binanceSymbols, favoriteSymbols]);
+
+    const getSymbolIcon = (symbol: string) => {
+        const found = TRADING_ASSETS.find(a => a.symbol === symbol) || binanceSymbols.find(a => a.symbol === symbol);
+        if (found && found.icon && !found.icon.includes('fa-cloud-arrow-down')) return found.icon;
+
+        // Dynamic Mapping
+        const s = symbol.toUpperCase();
+        if (s.includes('BTC')) return 'fa-brands fa-bitcoin';
+        if (s.includes('ETH')) return 'fa-brands fa-ethereum';
+        if (s.includes('SOL')) return 'fa-solid fa-layer-group text-emerald-400';
+        if (s.includes('XRP')) return 'fa-solid fa-droplet text-blue-400';
+        if (s.includes('BNB')) return 'fa-solid fa-coins text-yellow-400';
+        if (s.includes('EUR') || s.includes('GBP') || s.includes('JPY') || s.includes('USD')) return 'fa-solid fa-money-bill-transfer';
+        if (s.includes('GOLD') || s.includes('XAU')) return 'fa-solid fa-ring text-amber-400';
+        if (s.includes('OIL')) return 'fa-solid fa-droplet text-slate-800';
+
+        return 'fa-solid fa-coins text-slate-500';
+    };
 
     // --- Tag Management ---
     const addTag = (val: string, setVal: (s: string) => void, list: string[], setList: (l: string[]) => void, category: string) => {
@@ -528,6 +628,15 @@ const TradeForm: React.FC<TradeFormProps> = ({
 
     const removeTag = (tagToRemove: string, list: string[], setList: (l: string[]) => void) => {
         setList(list.filter(t => t !== tagToRemove));
+    };
+
+    const handleAddCustomExchange = () => {
+        if (newExchangeName && newExchangeName.trim() && onAddExchange) {
+            onAddExchange(newExchangeName.trim());
+            setFormData({ ...formData, exchange: newExchangeName.trim() });
+            setNewExchangeName('');
+            setShowAddExchange(false);
+        }
     };
 
     const getTagStyles = (tagName: string) => {
@@ -642,20 +751,29 @@ const TradeForm: React.FC<TradeFormProps> = ({
 
                             {/* Symbol Input with Suggestions */}
                             <div className="relative" ref={suggestionsRef}>
-                                <InputGroup label="Symbol" customIcon={activeAsset ? <i className={`${activeAsset.icon} ${activeAsset.color}`}></i> : <i className="fa-solid fa-coins text-slate-500"></i>} focusClass={theme.focusBorder}>
+                                <InputGroup label="Symbol" customIcon={activeAsset ? <i className={`${getSymbolIcon(activeAsset.symbol)} ${activeAsset.color}`}></i> : <i className="fa-solid fa-coins text-slate-500"></i>} focusClass={theme.focusBorder}>
                                     <input required type="text" placeholder="e.g. BTC" className="w-full bg-transparent text-sm text-white placeholder-slate-600 outline-none uppercase" value={formData.symbol} onChange={handleSymbolChange} onFocus={() => setShowSuggestions(true)} onBlur={handleSymbolBlur} />
                                 </InputGroup>
                                 {showSuggestions && filteredAssets.length > 0 && (
                                     <div className="absolute top-full left-0 right-0 z-50 mt-1 max-h-60 overflow-y-auto rounded-lg border border-slate-700 bg-[#151A25] shadow-xl custom-scrollbar">
-                                        {filteredAssets.map((asset) => (
-                                            <div key={asset.symbol} onClick={() => selectSymbol(asset)} className="flex cursor-pointer items-center justify-between px-4 py-3 hover:bg-slate-800 transition-colors">
-                                                <div className="flex items-center gap-3">
-                                                    <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-[#0B0E14] border border-slate-800 ${asset.color}`}><i className={asset.icon}></i></div>
-                                                    <div><p className="text-sm font-bold text-white">{asset.symbol}</p><p className="text-xs text-slate-500">{asset.name}</p></div>
+                                        {filteredAssets.map((asset) => {
+                                            const isFav = favoriteSymbols.includes(asset.symbol);
+                                            return (
+                                                <div key={asset.symbol} className="flex group cursor-pointer items-center justify-between px-4 py-3 hover:bg-slate-800 transition-colors">
+                                                    <div className="flex items-center gap-3 flex-1" onClick={() => selectSymbol(asset)}>
+                                                        <div className={`flex h-8 w-8 items-center justify-center rounded-lg bg-[#0B0E14] border border-slate-800 ${asset.color}`}><i className={getSymbolIcon(asset.symbol)}></i></div>
+                                                        <div><p className="text-sm font-bold text-white">{asset.symbol}</p><p className="text-xs text-slate-500">{asset.name}</p></div>
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={(e) => { e.stopPropagation(); onToggleFavoriteSymbol?.(asset.symbol); }}
+                                                        className={`p-2 transition-all ${isFav ? 'text-amber-400 opacity-100 scale-110' : 'text-slate-600 opacity-0 group-hover:opacity-100 hover:text-amber-400'}`}
+                                                    >
+                                                        <i className={`fa-star ${isFav ? 'fa-solid' : 'fa-regular'}`}></i>
+                                                    </button>
                                                 </div>
-                                                <span className="text-[9px] font-bold text-slate-500 bg-black/40 px-1.5 py-0.5 rounded border border-slate-800 uppercase tracking-tighter">{asset.category}</span>
-                                            </div>
-                                        ))}
+                                            );
+                                        })}
                                     </div>
                                 )}
                             </div>
@@ -678,10 +796,65 @@ const TradeForm: React.FC<TradeFormProps> = ({
                             <div className="space-y-2">
                                 <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Exchange</label>
                                 <div className="relative">
-                                    <select className={`w-full appearance-none rounded-lg border border-slate-800 bg-[#151A25] px-4 py-2.5 text-sm text-white ${theme.focusBorder} outline-none`} value={formData.exchange} onChange={e => setFormData({ ...formData, exchange: e.target.value })}>
-                                        {availableExchanges.map(ex => (<option key={ex} value={ex}>{ex}</option>))}
-                                    </select>
-                                    <i className="fa-solid fa-chevron-down absolute right-4 top-3.5 text-xs text-slate-500 pointer-events-none"></i>
+                                    {showAddExchange ? (
+                                        <div className="flex gap-2">
+                                            <input
+                                                autoFocus
+                                                type="text"
+                                                className={`w-full rounded-lg border border-slate-700 bg-[#0B0E14] px-4 py-2 text-xs text-white placeholder-slate-600 outline-none ${theme.focusBorder}`}
+                                                placeholder="Enter exchange name..."
+                                                value={newExchangeName}
+                                                onChange={e => setNewExchangeName(e.target.value)}
+                                                onKeyDown={e => {
+                                                    if (e.key === 'Enter') handleAddCustomExchange();
+                                                    if (e.key === 'Escape') setShowAddExchange(false);
+                                                }}
+                                            />
+                                            <button
+                                                type="button"
+                                                onClick={handleAddCustomExchange}
+                                                className="px-3 rounded-lg bg-indigo-600 text-white text-[10px] font-bold"
+                                            >
+                                                Add
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setShowAddExchange(false)}
+                                                className="px-2 rounded-lg bg-slate-800 text-slate-400 text-[10px]"
+                                            >
+                                                <i className="fa-solid fa-xmark"></i>
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <>
+                                            <select
+                                                className={`w-full appearance-none rounded-lg border border-slate-800 bg-[#151A25] px-4 py-2.5 text-sm text-white ${theme.focusBorder} outline-none transition-all`}
+                                                value={formData.exchange}
+                                                onChange={e => {
+                                                    if (e.target.value === 'ADD_NEW') {
+                                                        setShowAddExchange(true);
+                                                    } else {
+                                                        setFormData({ ...formData, exchange: e.target.value });
+                                                    }
+                                                }}
+                                            >
+                                                <optgroup label="Presets">
+                                                    {['Binance', 'Bybit', 'OKX', 'Bitget', 'KuCoin', 'IC Markets', 'Pepperstone', 'Exness', 'OANDA', 'IG'].map(ex => (
+                                                        <option key={ex} value={ex}>{ex}</option>
+                                                    ))}
+                                                </optgroup>
+                                                {availableExchanges.length > 0 && (
+                                                    <optgroup label="Your Exchanges">
+                                                        {availableExchanges.filter(e => !['Binance', 'Bybit', 'OKX', 'Bitget', 'KuCoin', 'IC Markets', 'Pepperstone', 'Exness', 'OANDA', 'IG'].includes(e)).map(ex => (
+                                                            <option key={ex} value={ex}>{ex}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                )}
+                                                <option value="ADD_NEW" className="text-indigo-400 font-bold">+ Add Custom Exchange...</option>
+                                            </select>
+                                            <i className="fa-solid fa-chevron-down absolute right-4 top-3.5 text-xs text-slate-500 pointer-events-none"></i>
+                                        </>
+                                    )}
                                 </div>
                             </div>
                         </div>
@@ -725,19 +898,80 @@ const TradeForm: React.FC<TradeFormProps> = ({
                             </InputGroup>
 
                             <div className="space-y-2">
-                                <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider flex justify-between">
-                                    <span>Capital (USD)</span>
-                                    <span className="text-emerald-400 normal-case">Avail: ${portfolioBalance.toLocaleString()}</span>
-                                </label>
+                                <div className="flex justify-between items-center">
+                                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Capital (USD)</label>
+                                    {entryMode === 'LIVE' && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setIsCalculatingByRisk(!isCalculatingByRisk)}
+                                            className={`text-[9px] font-bold px-2 py-0.5 rounded border transition-all ${isCalculatingByRisk ? 'bg-indigo-500/20 text-indigo-400 border-indigo-500/50' : 'text-slate-500 border-slate-800 hover:text-slate-300'}`}
+                                        >
+                                            {isCalculatingByRisk ? 'Sizing by Risk %' : 'Sizing by Margin'}
+                                        </button>
+                                    )}
+                                </div>
                                 <div className="flex flex-col gap-2">
-                                    <div className={`flex items-center rounded-lg border border-slate-800 bg-[#151A25] px-4 py-2.5 ${theme.focusBorder} transition-colors`}>
-                                        <input required type="number" placeholder="0" className="w-full bg-transparent text-sm text-white placeholder-slate-600 outline-none font-mono" value={formData.capital} onChange={e => setFormData({ ...formData, capital: e.target.value })} />
+                                    <div className={`flex items-center rounded-lg border border-slate-800 bg-[#151A25] px-4 py-2.5 ${theme.focusBorder} transition-colors ${isCalculatingByRisk ? 'opacity-50' : ''}`}>
+                                        <input
+                                            required
+                                            disabled={isCalculatingByRisk}
+                                            type="number"
+                                            placeholder="0"
+                                            className="w-full bg-transparent text-sm text-white placeholder-slate-600 outline-none font-mono"
+                                            value={formData.capital}
+                                            onChange={e => setFormData({ ...formData, capital: e.target.value })}
+                                        />
                                     </div>
-                                    <div className="flex gap-2">
-                                        {[25, 50, 75, 100].map(pct => (
-                                            <button key={pct} type="button" onClick={() => setCapitalByPercent(pct)} className="flex-1 rounded border border-slate-800 bg-[#0F1218] py-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-all">{pct}%</button>
-                                        ))}
-                                    </div>
+
+                                    {isCalculatingByRisk && entryMode === 'LIVE' ? (
+                                        <div className="mt-1 p-3 rounded-lg bg-indigo-500/5 border border-indigo-500/20 space-y-3 animate-in zoom-in-95 duration-200">
+                                            <div className="flex justify-between items-center">
+                                                <span className="text-[9px] font-bold text-indigo-300 uppercase">Risk Calculation</span>
+                                                <span className="text-[9px] font-bold text-slate-500">${portfolioBalance.toLocaleString()} bal</span>
+                                            </div>
+                                            <div className="flex gap-4">
+                                                <div className="flex-1 space-y-1">
+                                                    <span className="text-[9px] text-slate-500 font-bold uppercase">Risk %</span>
+                                                    <div className="flex items-center rounded bg-[#0B0E14] border border-slate-700 px-2 py-1">
+                                                        <input
+                                                            type="number"
+                                                            className="w-full bg-transparent text-xs text-white outline-none font-mono"
+                                                            value={riskPercent}
+                                                            onChange={e => setRiskPercent(e.target.value)}
+                                                        />
+                                                        <span className="text-[9px] text-slate-500 font-bold ml-1">%</span>
+                                                    </div>
+                                                </div>
+                                                <div className="flex-1 space-y-1">
+                                                    <span className="text-[9px] text-slate-500 font-bold uppercase">Risk Amount</span>
+                                                    <div className="flex items-center rounded bg-[#0B0E14]/50 border border-slate-800 px-2 py-1 h-[26px]">
+                                                        <span className="text-xs text-white font-mono font-bold">${((portfolioBalance * (parseFloat(riskPercent) || 0)) / 100).toFixed(2)}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1 overflow-x-auto no-scrollbar pb-1">
+                                                {riskPresets.map(preset => (
+                                                    <button
+                                                        key={preset}
+                                                        type="button"
+                                                        onClick={() => setRiskPercent(preset.toString())}
+                                                        className={`px-2 py-1 rounded text-[9px] font-bold border transition-all ${parseFloat(riskPercent) === preset ? 'bg-indigo-500/30 text-indigo-300 border-indigo-500/50' : 'bg-black/20 text-slate-500 border-slate-800 hover:text-slate-300'}`}
+                                                    >
+                                                        {preset}%
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="text-[9px] text-slate-400 italic">
+                                                {!formData.stopLoss ? '⚠️ Set SL price to calculate.' : '✅ Sizing adjusted.'}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="flex gap-2">
+                                            {[25, 50, 75, 100].map(pct => (
+                                                <button key={pct} type="button" onClick={() => setCapitalByPercent(pct)} className="flex-1 rounded border border-slate-800 bg-[#0F1218] py-1 text-[10px] font-bold text-slate-400 hover:text-white hover:bg-slate-800 transition-all">{pct}%</button>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
@@ -749,7 +983,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
                                         <span className="text-xs text-slate-500 font-bold">x</span>
                                     </div>
                                     <div className="flex gap-1.5 overflow-x-auto no-scrollbar">
-                                        {[1, 5, 10, 25, 50, 100].map(lev => (
+                                        {leveragePresets.map(lev => (
                                             <button key={lev} type="button" onClick={() => setFormData({ ...formData, leverage: lev })} className={`px-2.5 py-1 rounded text-[10px] font-bold border transition-all ${formData.leverage === lev ? 'bg-emerald-500 text-white border-emerald-500' : 'border-slate-800 bg-[#0F1218] text-slate-400 hover:text-white'}`}>
                                                 {lev}x
                                             </button>
@@ -816,7 +1050,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex gap-1.5 mt-1">
-                                    {[1, 2, 5, 10].map(pct => (
+                                    {slPresets.map(pct => (
                                         <button key={pct} type="button" onClick={() => setPriceByPercent('SL', pct)} className="flex-1 py-1 rounded bg-rose-900/20 border border-rose-900/30 text-[10px] font-bold text-rose-400 hover:bg-rose-900/40 transition-all">{pct}%</button>
                                     ))}
                                 </div>
@@ -834,7 +1068,7 @@ const TradeForm: React.FC<TradeFormProps> = ({
                                     </div>
                                 </div>
                                 <div className="flex gap-1.5 mt-1">
-                                    {[1, 2, 5, 10].map(pct => (
+                                    {tpPresets.map(pct => (
                                         <button key={pct} type="button" onClick={() => setPriceByPercent('TP', pct)} className="flex-1 py-1 rounded bg-emerald-900/20 border border-emerald-900/30 text-[10px] font-bold text-emerald-400 hover:bg-emerald-900/40 transition-all">{pct}%</button>
                                     ))}
                                 </div>
@@ -842,19 +1076,41 @@ const TradeForm: React.FC<TradeFormProps> = ({
                         </div>
 
                         {/* Calculations Panel */}
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 rounded-xl bg-[#0F1218] border border-slate-800/50 p-6">
-                            <div><p className="text-[10px] font-bold text-slate-500 mb-1">Calculated Position Size</p><p className="text-2xl font-bold text-white font-mono">${metrics.positionSize.toLocaleString()}</p></div>
-                            <div className="relative group">
-                                <p className="text-[10px] font-bold text-emerald-500 mb-1 flex items-center gap-1 cursor-pointer" onClick={onEditFees}>
-                                    $ Est. Total Fee <i className="fa-solid fa-gear text-[10px] opacity-50 group-hover:opacity-100"></i>
-                                </p>
-                                <p className="text-2xl font-bold text-white font-mono">${metrics.estFees.toFixed(2)}</p>
-                                <p className="text-[10px] text-slate-500">Round trip</p>
-                            </div>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 rounded-xl bg-[#0F1218] border border-slate-800/50 p-6">
+                            <div><p className="text-[10px] font-bold text-slate-500 mb-1">Position Size</p><p className="text-2xl font-bold text-white font-mono">${metrics.positionSize.toLocaleString()}</p></div>
+
+                            {(activeAsset?.category === 'Forex' || formData.symbol.length === 6) ? (
+                                <div>
+                                    <p className="text-[10px] font-bold text-indigo-400 mb-1 flex items-center gap-1">
+                                        <i className="fa-solid fa-calculator"></i> Forex Pips & Lots
+                                    </p>
+                                    <div className="flex items-baseline gap-2">
+                                        <p className="text-2xl font-bold text-white font-mono">{metrics.lots.toFixed(2)}</p>
+                                        <span className="text-[10px] text-slate-500 font-bold uppercase">Lots</span>
+                                        <p className="text-lg font-bold text-indigo-400 font-mono ml-2">${metrics.pipValue.toFixed(2)}</p>
+                                        <span className="text-[9px] text-slate-500 font-bold uppercase">/Pip</span>
+                                    </div>
+                                    <p className="text-[9px] text-slate-600 mt-1">{metrics.pips.toFixed(1)} pips distance @ standard lot units</p>
+                                </div>
+                            ) : (
+                                <div className="relative group">
+                                    <p className="text-[10px] font-bold text-emerald-500 mb-1 flex items-center gap-1 cursor-pointer hover:text-emerald-400 group/fee transition-colors" onClick={() => onJumpToPortfolio ? onJumpToPortfolio() : onEditFees?.()}>
+                                        $ Est. Total Fee <i className="fa-solid fa-sliders text-[10px] ml-1 group-hover/fee:scale-110 transition-transform" title="Configure Fees in Portfolio"></i>
+                                    </p>
+                                    <p className="text-2xl font-bold text-white font-mono">${metrics.estFees.toFixed(2)}</p>
+                                    <p className="text-[10px] text-slate-500">Round trip</p>
+                                </div>
+                            )}
+
                             <div>
                                 <p className="text-[10px] font-bold text-rose-500 mb-1 flex items-center gap-1"><i className="fa-solid fa-skull"></i> Est. Liquidation</p>
                                 <p className="text-2xl font-bold text-rose-400 font-mono">{metrics.liquidationPrice > 0 ? metrics.liquidationPrice.toFixed(2) : 'N/A'}</p>
-                                <p className="text-[10px] text-slate-500">Enter price & lev</p>
+                                <p className="text-[10px] text-slate-500">Distance: {formData.entryPrice && metrics.liquidationPrice ? (Math.abs(parseFloat(formData.entryPrice) - metrics.liquidationPrice) / parseFloat(formData.entryPrice) * 100).toFixed(1) + '%' : 'Enter price'}</p>
+                            </div>
+
+                            <div>
+                                <p className="text-[10px] font-bold text-slate-500 mb-1">Base Units (Qty)</p>
+                                <p className="text-2xl font-bold text-white font-mono">{metrics.quantity.toLocaleString(undefined, { maximumFractionDigits: 4 })}</p>
                             </div>
                         </div>
 

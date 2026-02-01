@@ -146,9 +146,19 @@ const TradeDetailsModal: React.FC<TradeDetailsModalProps> = ({ trade, onClose, b
                                     <span className="text-xs text-slate-500">Margin</span>
                                     <span className="text-sm font-mono text-white">{currency.format(trade.capital)}</span>
                                 </div>
-                                <div className="flex justify-between">
+                                <div className="flex justify-between items-center">
                                     <span className="text-xs text-slate-500">Duration</span>
                                     <span className="text-sm font-mono text-white">{durationStr}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-slate-500">Exchange</span>
+                                    <span className="text-sm font-bold text-indigo-400">{trade.exchange || '--'}</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                    <span className="text-xs text-slate-500">Source</span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded font-bold ${trade.source === 'CSV' ? 'bg-amber-500/10 text-amber-500 border border-amber-500/20' : 'bg-emerald-500/10 text-emerald-500 border border-emerald-500/20'}`}>
+                                        {trade.source === 'CSV' ? 'CSV Import' : 'Manual Log'}
+                                    </span>
                                 </div>
                                 <div className="flex justify-between items-center">
                                     <span className="text-xs text-slate-500">Quality</span>
