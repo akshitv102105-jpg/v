@@ -7,6 +7,7 @@ import GreetingBanner from './GreetingBanner';
 
 interface DashboardProps {
     trades: Trade[];
+    isLoading?: boolean;
     strategies: Strategy[];
     availableTags: Record<string, Tag[]>;
     onAddClick: () => void;
@@ -32,7 +33,7 @@ interface DashboardProps {
 }
 
 const Dashboard: React.FC<DashboardProps> = ({
-    trades, strategies, availableTags, onAddClick, onCloseTrade, onViewChange, onNavigateToPlaybook,
+    trades, isLoading = false, strategies, availableTags, onAddClick, onCloseTrade, onViewChange, onNavigateToPlaybook,
     baseCurrency, profitGoals, riskSettings, portfolioBalance,
     habits, habitCompletions, onToggleHabit,
     focusTasks, onAddFocusTask, onToggleFocusTask, onDeleteFocusTask,
@@ -401,18 +402,28 @@ const Dashboard: React.FC<DashboardProps> = ({
                 <NavCard title="Trade Log" subtitle="Detailed history & stats" icon="fa-clock-rotate-left" gradient="bg-[#151A25] border-slate-800 hover:border-amber-500/50" iconBg="bg-amber-500/10 text-amber-400" onClick={() => onViewChange('analytics')} />
             </div>
 
+
             {/* --- ROW 2: Open Positions (Concurrent) --- */}
-            {openTrades.length > 0 && (
-                <div className="animate-in fade-in slide-in-from-top-2 duration-300">
-                    <div className="flex items-center gap-3 mb-3 px-1">
-                        <h2 className="text-lg font-bold text-white">Open Positions</h2>
+            <div className={`transition-all duration-500 overflow-hidden ${(isLoading || openTrades.length > 0) ? 'max-h-[1000px] mb-6' : 'max-h-0'}`}>
+                <div className="flex items-center gap-3 mb-3 px-1">
+                    <h2 className="text-lg font-bold text-white">Open Positions</h2>
+                    {(isLoading) ? (
+                        <div className="h-5 w-20 bg-slate-800 rounded animate-pulse"></div>
+                    ) : (
                         <span className="bg-[#2E1065] text-[#A78BFA] border border-[#8B5CF6]/20 px-2 py-0.5 rounded text-[10px] font-bold uppercase">
                             {openTrades.length} Active
                         </span>
-                    </div>
+                    )}
+                </div>
 
-                    <div className="grid grid-cols-1 gap-6">
-                        {openTrades.map(trade => (
+                <div className="grid grid-cols-1 gap-6">
+                    {isLoading ? (
+                        // Skeleton for Loading
+                        <div className="h-32 w-full bg-[#151A25] border border-slate-800 rounded-2xl animate-pulse flex items-center justify-center">
+                            <i className="fa-solid fa-circle-notch fa-spin text-slate-700 text-xl"></i>
+                        </div>
+                    ) : (
+                        openTrades.map(trade => (
                             <ActivePositionCard
                                 key={trade.id}
                                 trade={trade}
@@ -421,10 +432,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 onAutoClose={handleAutoClose}
                                 onPnlUpdate={handlePnlUpdate}
                             />
-                        ))}
-                    </div>
+                        ))
+                    )}
                 </div>
-            )}
+            </div>
+
 
             {/* --- LIVE ANIMATION: Risk & Reward --- */}
             <RiskRewardAnimation

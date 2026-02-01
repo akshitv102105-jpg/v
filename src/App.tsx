@@ -48,8 +48,8 @@ const getTraderLevel = (pf: number, dd: number, rr: number, tradeCount: number) 
 
 const AppContent: React.FC = () => {
   // Hooks
-  const { trades, addTrade, updateTrade, deleteTrade, deleteTrades, importTrades, clearAllTrades, clearImportedTrades } = useTrades();
-  const { profile, updateProfile } = useProfile();
+  const { trades, loading: tradesLoading, addTrade, updateTrade, deleteTrade, deleteTrades, importTrades, clearAllTrades, clearImportedTrades } = useTrades();
+  const { profile, loading: profileLoading, updateProfile } = useProfile();
   const { strategies, addStrategy, updateStrategy, deleteStrategy } = useStrategies();
   const { habits, completions, toggleHabit, addHabit, deleteHabit } = useHabits();
 
@@ -123,7 +123,7 @@ const AppContent: React.FC = () => {
 
   // Derived Profile State (Defaults)
   const activeProfile: UserProfile = profile || {
-    nickname: 'Trader', bio: '', primaryExchange: 'Binance', timezone: 'UTC',
+    nickname: profileLoading ? '' : 'Trader', bio: '', primaryExchange: 'Binance', timezone: 'UTC',
     fees: { maker: 0.02, taker: 0.05, type: 'PERCENTAGE' }, preferences: { enableAnimations: true, includeImportPnl: false }
   };
 
@@ -304,6 +304,7 @@ const AppContent: React.FC = () => {
         {activeView === 'dashboard' && (
           <Dashboard
             trades={visibleTrades}
+            isLoading={tradesLoading || profileLoading}
             strategies={strategies}
             availableTags={availableTags}
             onAddClick={() => setShowTradeForm(true)}

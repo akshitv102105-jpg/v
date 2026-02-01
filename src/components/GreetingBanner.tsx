@@ -134,79 +134,102 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
 
     const styles = rank ? getRankStyles(rank.name) : null;
 
+
     return (
-        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 relative">
-            <div className="flex-1 relative z-10">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 relative min-h-[180px]">
+            <div className="flex-1 relative z-10 w-full">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></div>
                     <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">System Online</span>
                 </div>
 
-                <h1 className="text-3xl md:text-5xl font-black text-white mb-2 tracking-tight">
-                    {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">{nickname}</span>
-                </h1>
+                <div className="min-h-[60px] md:min-h-[80px]">
+                    <h1 className="text-3xl md:text-5xl font-black text-white mb-2 tracking-tight">
+                        {greeting},
+                        {nickname ? (
+                            <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400 ml-2">{nickname}</span>
+                        ) : (
+                            <span className="inline-block w-40 h-10 bg-slate-800/50 rounded animate-pulse ml-2 translate-y-2"></span>
+                        )}
+                    </h1>
+                </div>
 
-                {rank && styles && (
-                    <div className="mb-4">
-                        <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mr-2">Trader's Ranking:</span>
-                        <span className={`text-lg transition-all duration-300 ${styles.text} ${rank.color} drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>{rank.name}</span>
-                    </div>
-                )}
+                <div className="min-h-[28px] mb-4">
+                    {rank && styles ? (
+                        <div className="animate-in fade-in duration-500">
+                            <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mr-2">Trader's Ranking:</span>
+                            <span className={`text-lg transition-all duration-300 ${styles.text} ${rank.color} drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>{rank.name}</span>
+                        </div>
+                    ) : (
+                        <div className="h-6 w-32 bg-slate-800/50 rounded animate-pulse"></div>
+                    )}
+                </div>
 
-                <div className="max-w-2xl">
-                    <p className="text-sm md:text-base text-slate-400 italic font-medium leading-relaxed opacity-80">
-                        <i className="fa-solid fa-quote-left text-[10px] text-indigo-500 mr-2 opacity-50"></i>
-                        {quote}
-                        <i className="fa-solid fa-quote-right text-[10px] text-indigo-500 ml-2 opacity-50"></i>
-                    </p>
+                <div className="max-w-2xl min-h-[40px]">
+                    {quote ? (
+                        <p className="text-sm md:text-base text-slate-400 italic font-medium leading-relaxed opacity-80 animate-in fade-in duration-700">
+                            <i className="fa-solid fa-quote-left text-[10px] text-indigo-500 mr-2 opacity-50"></i>
+                            {quote}
+                            <i className="fa-solid fa-quote-right text-[10px] text-indigo-500 ml-2 opacity-50"></i>
+                        </p>
+                    ) : (
+                        <div className="h-4 w-full max-w-md bg-slate-800/30 rounded animate-pulse"></div>
+                    )}
                 </div>
             </div>
 
             {/* Premium Rank Widget */}
-            {rank && styles && (
-                <div className="relative flex flex-col items-center justify-center p-8 min-w-[220px] group cursor-default z-20">
-
-                    {/* GOD Rank Galaxy Vortex Special Effect */}
-                    {rank.name === 'GOD' && (
-                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="absolute w-[220px] h-[220px] galaxy-bg animate-pulse"></div>
-                            <div className="vortex-layer animate-vortex-slow"></div>
-                            <div className="vortex-layer animate-vortex-slow opacity-40" style={{ animationDuration: '15s', animationDirection: 'reverse', inset: '-40px' }}></div>
-                            <div className="vortex-particles animate-banner-drift"></div>
-                        </div>
-                    )}
-
-                    {/* Concentric Aura Layers for others */}
-                    {rank.name !== 'GOD' && (
-                        <>
-                            <div className={`absolute w-32 h-32 rounded-full blur-[30px] opacity-30 animate-pulse ${rank.color.replace('text-', 'bg-')}`}></div>
-                            <div className={`absolute w-40 h-40 rounded-full blur-[60px] opacity-10 ${rank.color.replace('text-', 'bg-')}`}></div>
-                        </>
-                    )}
-
-                    {/* Avatar Container with Glow Ring */}
-                    <div className="relative mb-6">
-                        {/* Dynamic Swirling Border for GOD */}
+            <div className="relative flex flex-col items-center justify-center p-8 min-w-[220px] h-[220px] flex-shrink-0 group cursor-default z-20">
+                {rank && styles ? (
+                    <div className="animate-in fade-in zoom-in-95 duration-500 flex flex-col items-center">
+                        {/* GOD Rank Galaxy Vortex Special Effect */}
                         {rank.name === 'GOD' && (
+                            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                                <div className="absolute w-[220px] h-[220px] galaxy-bg animate-pulse"></div>
+                                <div className="vortex-layer animate-vortex-slow"></div>
+                                <div className="vortex-layer animate-vortex-slow opacity-40" style={{ animationDuration: '15s', animationDirection: 'reverse', inset: '-40px' }}></div>
+                                <div className="vortex-particles animate-banner-drift"></div>
+                            </div>
+                        )}
+
+                        {/* Concentric Aura Layers for others */}
+                        {rank.name !== 'GOD' && (
                             <>
-                                <div className="absolute -inset-2 rounded-full opacity-20 blur-lg bg-purple-600 animate-pulse"></div>
-                                <div className="absolute -inset-1 rounded-full border border-purple-400/20 animate-vortex-slow"></div>
+                                <div className={`absolute w-32 h-32 rounded-full blur-[30px] opacity-30 animate-pulse ${rank.color.replace('text-', 'bg-')}`}></div>
+                                <div className={`absolute w-40 h-40 rounded-full blur-[60px] opacity-10 ${rank.color.replace('text-', 'bg-')}`}></div>
                             </>
                         )}
 
-                        <div className={`relative h-24 w-24 rounded-full border-4 bg-slate-950 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 shadow-xl ${styles.glow} ${styles.ring}`}>
-                            {userProfile?.avatarImage ? (
-                                <img src={userProfile.avatarImage} alt="Rank" className="h-full w-full object-cover" />
-                            ) : (
-                                <i className={`fa-solid fa-user-astronaut text-4xl ${rank.color}`}></i>
+                        {/* Avatar Container with Glow Ring */}
+                        <div className="relative">
+                            {/* Dynamic Swirling Border for GOD */}
+                            {rank.name === 'GOD' && (
+                                <>
+                                    <div className="absolute -inset-2 rounded-full opacity-20 blur-lg bg-purple-600 animate-pulse"></div>
+                                    <div className="absolute -inset-1 rounded-full border border-purple-400/20 animate-vortex-slow"></div>
+                                </>
                             )}
+
+                            <div className={`relative h-24 w-24 rounded-full border-4 bg-slate-950 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 shadow-xl ${styles.glow} ${styles.ring}`}>
+                                {userProfile?.avatarImage ? (
+                                    <img src={userProfile.avatarImage} alt="Rank" className="h-full w-full object-cover" />
+                                ) : (
+                                    <i className={`fa-solid fa-user-astronaut text-4xl ${rank.color}`}></i>
+                                )}
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
+                ) : (
+                    /* Loading State for Rank Widget */
+                    <div className="relative flex items-center justify-center h-24 w-24 rounded-full border-4 border-slate-800 bg-slate-900/50 animate-pulse">
+                        <i className="fa-solid fa-circle-notch fa-spin text-slate-700 text-2xl"></i>
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
+
 
 export default GreetingBanner;
 

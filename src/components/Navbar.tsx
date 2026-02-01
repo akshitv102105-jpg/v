@@ -105,7 +105,11 @@ const Navbar: React.FC<NavbarProps> = ({ activeView, onViewChange, userProfile, 
 
                         <div className="text-right hidden sm:block relative z-10">
                             {/* Only display the nickname, synced from user profile */}
-                            <p className="text-sm font-bold text-white leading-tight">{userProfile.nickname}</p>
+                            {userProfile.nickname ? (
+                                <p className="text-sm font-bold text-white leading-tight">{userProfile.nickname}</p>
+                            ) : (
+                                <div className="h-4 w-20 bg-slate-800 rounded animate-pulse mb-1"></div>
+                            )}
                             {/* Rank Name Display */}
                             {rank && (
                                 <div className="flex flex-col items-end">

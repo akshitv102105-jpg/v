@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '../supabase/client';
 import { Achievement } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -45,10 +45,9 @@ export const useAchievements = () => {
         }
     };
 
-    const generateForMonth = async (month: string) => {
+    const generateForMonth = useCallback(async (month: string) => {
         if (!user) return;
         // Check if exists locally or in DB (fetch first to be sure)
-        // For simplicity, we assume 'achievements' state is up to date or we check DB
         const { data: existing } = await supabase.from('achievements').select('id').eq('month', month).limit(1);
 
         if (!existing || existing.length === 0) {
@@ -86,9 +85,9 @@ export const useAchievements = () => {
                 setAchievements(prev => [...prev, ...formatted]);
             }
         }
-    };
+    }, [user]);
 
-    const updateProgress = async (trades: Trade[], journalEntries: JournalEntry[]) => {
+    const updateProgress = useCallback(async (trades: Trade[], journalEntries: JournalEntry[]) => {
         if (!user || achievements.length === 0) return;
 
         const now = new Date();
@@ -101,7 +100,6 @@ export const useAchievements = () => {
         });
 
         // Identify changes and bulk update DB
-        // Optimized: only update changed ones
         const changed = updatedList.filter(u => {
             const original = achievements.find(a => a.id === u.id);
             return original && (original.progress !== u.progress || original.isUnlocked !== u.isUnlocked);
@@ -120,7 +118,7 @@ export const useAchievements = () => {
                 }).eq('id', item.id);
             }
         }
-    };
+    }, [user, achievements]);
 
     useEffect(() => {
         fetchAchievements();
@@ -128,3 +126,4 @@ export const useAchievements = () => {
 
     return { achievements, loading, generateForMonth, updateProgress };
 };
+
