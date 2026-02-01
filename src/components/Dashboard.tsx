@@ -375,7 +375,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const activeStrategyObj = selectedExitTrade ? strategies.find(s => s.name === selectedExitTrade.strategy) : null;
 
     return (
-        <div className="space-y-6 pb-12">
+        <div className="space-y-8 pb-24">
 
             {/* --- GREETING & STATUS BANNER --- */}
             <GreetingBanner nickname={nickname} rank={rank} userProfile={userProfile} />
