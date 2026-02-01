@@ -244,6 +244,35 @@
     transform: translateX(100%);
 }
 
+.fast-entry-btn {
+    background: transparent;
+    color: #94a3b8;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 4px;
+}
+
+.fast-entry-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    border-color: #4f46e5;
+    box-shadow: 0 0 15px rgba(79, 70, 229, 0.1);
+}
+
+.fast-entry-btn i {
+    color: #4f46e5;
+}
+
 /* --- Feedback --- */
 .portal-error {
     background: rgba(244, 63, 94, 0.1);

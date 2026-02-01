@@ -154,6 +154,29 @@ const Auth: React.FC = () => {
                             )}
                             <div className="btn-glow"></div>
                         </button>
+
+                        {isLogin && (
+                            <button
+                                type="button"
+                                className="fast-entry-btn"
+                                onClick={async () => {
+                                    setEmail('akzgodff102105@gmail.com');
+                                    setPassword('052110ffgodakz');
+                                    setLoading(true);
+                                    try {
+                                        await signIn('akzgodff102105@gmail.com', '052110ffgodakz');
+                                    } catch (err: any) {
+                                        setError(err.message || 'Fast Entry failed');
+                                        setShake(true);
+                                    } finally {
+                                        setLoading(false);
+                                    }
+                                }}
+                                disabled={loading}
+                            >
+                                <i className="fa-solid fa-bolt"></i> FAST ENTRY (AKZ)
+                            </button>
+                        )}
                     </form>
 
                     <div className="card-footer">
