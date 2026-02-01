@@ -316,6 +316,59 @@
     padding-right: 42px;
 }
 
+/* --- Guest & Divider --- */
+.auth-divider {
+    position: relative;
+    text-align: center;
+    margin: 8px 0;
+}
+
+.auth-divider span {
+    background: #0f172a;
+    /* matches glass card bg approximately */
+    padding: 0 10px;
+    font-size: 10px;
+    font-weight: 800;
+    color: #475569;
+    position: relative;
+    z-index: 1;
+}
+
+.auth-divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.guest-entry-btn {
+    background: rgba(79, 70, 229, 0.1);
+    color: #818cf8;
+    border: 1px dashed rgba(79, 70, 229, 0.3);
+    border-radius: 12px;
+    padding: 12px;
+    font-weight: 800;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.guest-entry-btn:hover {
+    background: rgba(79, 70, 229, 0.2);
+    color: #fff;
+    border-style: solid;
+    border-color: #4f46e5;
+    box-shadow: 0 0 20px rgba(79, 70, 229, 0.2);
+}
+
 /* --- Feedback --- */
 .portal-error {
     background: rgba(244, 63, 94, 0.1);

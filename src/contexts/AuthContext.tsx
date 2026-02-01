@@ -9,6 +9,7 @@ interface AuthContextType {
     loading: boolean;
     signIn: (email: string, password?: string) => Promise<void>;
     signUp: (email: string, password: string, metadata?: any) => Promise<void>;
+    signInAnonymously: () => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -18,6 +19,7 @@ const AuthContext = createContext<AuthContextType>({
     loading: true,
     signIn: async () => { },
     signUp: async () => { },
+    signInAnonymously: async () => { },
     signOut: async () => { },
 });
 
@@ -74,12 +76,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (error) throw error;
     };
 
+    const signInAnonymously = async () => {
+        const { error } = await supabase.auth.signInAnonymously({
+            options: {
+                data: {
+                    nickname: 'Guest Trader',
+                    level: 1,
+                    is_guest: true
+                }
+            }
+        });
+        if (error) throw error;
+    };
+
     const signOut = async () => {
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
+        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInAnonymously, signOut }}>
             {!loading && children}
         </AuthContext.Provider>
     );

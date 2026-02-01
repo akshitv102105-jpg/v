@@ -5,7 +5,7 @@ import { GodVortex } from './GodVortex';
 import './Auth.css';
 
 const Auth: React.FC = () => {
-    const { signIn, signUp } = useAuth();
+    const { signIn, signUp, signInAnonymously } = useAuth();
     const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -171,26 +171,51 @@ const Auth: React.FC = () => {
                         </button>
 
                         {isLogin && (
-                            <button
-                                type="button"
-                                className="fast-entry-btn"
-                                onClick={async () => {
-                                    setEmail('akzgodff102105@gmail.com');
-                                    setPassword('052110ffgodakz');
-                                    setLoading(true);
-                                    try {
-                                        await signIn('akzgodff102105@gmail.com', '052110ffgodakz');
-                                    } catch (err: any) {
-                                        setError(err.message || 'Fast Entry failed');
-                                        setShake(true);
-                                    } finally {
-                                        setLoading(false);
-                                    }
-                                }}
-                                disabled={loading}
-                            >
-                                <i className="fa-solid fa-bolt"></i> FAST ENTRY (AKZ)
-                            </button>
+                            <>
+                                <button
+                                    type="button"
+                                    className="fast-entry-btn"
+                                    onClick={async () => {
+                                        setEmail('akzgodff102105@gmail.com');
+                                        setPassword('052110ffgodakz');
+                                        setLoading(true);
+                                        try {
+                                            await signIn('akzgodff102105@gmail.com', '052110ffgodakz');
+                                        } catch (err: any) {
+                                            setError(err.message || 'Fast Entry failed');
+                                            setShake(true);
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    disabled={loading}
+                                >
+                                    <i className="fa-solid fa-bolt"></i> FAST ENTRY (AKZ)
+                                </button>
+
+                                <div className="auth-divider">
+                                    <span>OR</span>
+                                </div>
+
+                                <button
+                                    type="button"
+                                    className="guest-entry-btn"
+                                    onClick={async () => {
+                                        setLoading(true);
+                                        try {
+                                            await signInAnonymously();
+                                        } catch (err: any) {
+                                            setError(err.message || 'Guest Entry failed');
+                                            setShake(true);
+                                        } finally {
+                                            setLoading(false);
+                                        }
+                                    }}
+                                    disabled={loading}
+                                >
+                                    <i className="fa-solid fa-user-secret"></i> ENTER AS GUEST
+                                </button>
+                            </>
                         )}
                     </form>
 
@@ -211,5 +236,3 @@ const Auth: React.FC = () => {
 };
 
 export default Auth;
-/ /   t r i g g e r  
- 
