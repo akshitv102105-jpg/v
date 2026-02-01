@@ -211,3 +211,5 @@ const Auth: React.FC = () => {
 };
 
 export default Auth;
+/ /   t r i g g e r  
+ 
