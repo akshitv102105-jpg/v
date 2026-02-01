@@ -345,7 +345,7 @@ const Playbook: React.FC<PlaybookProps> = ({
         : 0;
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12 relative">
+        <div className="space-y-8 pb-12 relative">
             {/* Header Section */}
             <div>
                 <div className="flex items-center gap-3 mb-2">

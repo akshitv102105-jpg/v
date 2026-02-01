@@ -113,7 +113,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
     // Handle initial empty state
     if (!activeAccount) {
         return (
-            <div className="space-y-8 animate-in fade-in duration-500 pb-12 flex flex-col items-center justify-center h-[50vh]">
+            <div className="space-y-8 pb-12 flex flex-col items-center justify-center h-[50vh]">
                 <div className="h-16 w-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
                     <i className="fa-solid fa-wallet text-3xl text-slate-500"></i>
                 </div>
@@ -234,7 +234,7 @@ const Portfolio: React.FC<PortfolioProps> = ({
     const withdrawHistory = accountTransactions.filter(t => t.type === 'WITHDRAWAL').sort((a: Transaction, b: Transaction) => new Date(b.date).getTime() - new Date(a.date).getTime());
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12">
+        <div className="space-y-8 pb-12">
             {/* Header */}
             <div>
                 <div className="flex items-center gap-3 mb-2">

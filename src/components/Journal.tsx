@@ -122,7 +122,7 @@ const Journal: React.FC<JournalProps> = ({ trades, entries, onSaveEntry, onViewA
     }, [entries, activeTab]);
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+        <div className="max-w-[1600px] mx-auto space-y-6 pb-12">
 
             {/* Header */}
             <div className="flex items-center justify-between">

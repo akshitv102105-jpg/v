@@ -271,7 +271,7 @@ const Profile: React.FC<ProfileProps> = ({
     };
 
     return (
-        <div className="max-w-[1600px] mx-auto space-y-6 animate-in fade-in duration-500 pb-12">
+        <div className="max-w-[1600px] mx-auto space-y-6 pb-12">
             <style>
                 {`
                 @keyframes spin {

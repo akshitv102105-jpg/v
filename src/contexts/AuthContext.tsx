@@ -37,45 +37,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         console.log('[AUTH DEBUG] Starting auth initialization...');
 
-        // Get initial session
-        supabase.auth.getSession().then(({ data: { session } }) => {
-            console.log('[AUTH DEBUG] getSession returned:', { hasSession: !!session, userId: session?.user?.id, initialized: initialized.current, isMounted });
-            if (isMounted && !initialized.current) {
-                initialized.current = true;
-                setSession(session);
-                setUser(session?.user ?? null);
-                setLoading(false);
-                console.log('[AUTH DEBUG] Initial session set, loading=false');
+        // Get initial session synchronously
+        const initializeAuth = async () => {
+            try {
+                const { data: { session }, error } = await supabase.auth.getSession();
+                console.log('[AUTH DEBUG] getSession returned:', { hasSession: !!session, userId: session?.user?.id, error });
+
+                if (isMounted) {
+                    setSession(session);
+                    setUser(session?.user ?? null);
+                    setLoading(false);
+                    initialized.current = true;
+                    console.log('[AUTH DEBUG] Initial session set, loading=false');
+                }
+            } catch (error) {
+                console.error('[AUTH DEBUG] Error getting session:', error);
+                if (isMounted) {
+                    setLoading(false);
+                    initialized.current = true;
+                }
             }
-        });
+        };
+
+        initializeAuth();
 
         // Listen for auth changes (login, logout, token refresh)
         const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
-            console.log('[AUTH DEBUG] onAuthStateChange fired:', { event, hasSession: !!session, userId: session?.user?.id, initialized: initialized.current, isMounted });
+            console.log('[AUTH DEBUG] onAuthStateChange fired:', { event, hasSession: !!session, userId: session?.user?.id });
 
-            // Only update state after initialization or for actual auth events
             if (!isMounted) {
                 console.log('[AUTH DEBUG] Skipping - component unmounted');
                 return;
             }
 
-            // Skip the INITIAL_SESSION event if we've already initialized
-            if (event === 'INITIAL_SESSION' && initialized.current) {
-                console.log('[AUTH DEBUG] Skipping INITIAL_SESSION - already initialized');
+            // Skip INITIAL_SESSION event as we handle it in getSession
+            if (event === 'INITIAL_SESSION') {
+                console.log('[AUTH DEBUG] Skipping INITIAL_SESSION - handled by getSession');
                 return;
             }
 
             console.log('[AUTH DEBUG] Updating state from event:', event);
-            // For actual auth events (SIGNED_IN, SIGNED_OUT, etc.), update state
             setSession(session);
             setUser(session?.user ?? null);
-
-            // Mark as initialized if not already (for edge case where onAuthStateChange fires before getSession)
-            if (!initialized.current) {
-                initialized.current = true;
-                setLoading(false);
-                console.log('[AUTH DEBUG] Initialized from onAuthStateChange, loading=false');
-            }
         });
 
         return () => {
@@ -134,7 +137,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     return (
         <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signInAnonymously, signOut }}>
-            {!loading && children}
+            {children}
         </AuthContext.Provider>
     );
 };

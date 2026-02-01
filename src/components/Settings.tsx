@@ -159,7 +159,7 @@ const Settings: React.FC<SettingsProps> = ({
     };
 
     return (
-        <div className="max-w-5xl mx-auto pb-12 animate-in fade-in duration-500">
+        <div className="max-w-5xl mx-auto pb-12">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8">
                 <div>

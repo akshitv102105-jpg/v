@@ -902,7 +902,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
     );
 
     return (
-        <div className="space-y-8 animate-in fade-in duration-500 pb-12 relative">
+        <div className="space-y-8 pb-12 relative">
             {/* Undo Notification */}
 
 
@@ -965,7 +965,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
             {viewTrade && <TradeDetailsModal trade={viewTrade} onClose={() => setViewTrade(null)} baseCurrency={baseCurrency} userFees={userFees} />}
 
             {activeTab === 'Analysis' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-6">
                     <FilterBar />
 
                     <div className="animate-in fade-in slide-in-from-bottom-2 duration-300 space-y-6">
@@ -1138,7 +1138,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
             {/* --- TRADE LOG --- */}
             {activeTab === 'Log' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-6">
                     <FilterBar />
 
                     <Card title={`Trade History (${filteredTrades.length})`}>
@@ -1294,7 +1294,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
             {/* --- CALENDAR VIEW --- */}
             {activeTab === 'Calendar' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-6">
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-4">
                             <h2 className="text-xl font-bold text-white">Profit Calendar</h2>
@@ -1431,7 +1431,7 @@ const Analytics: React.FC<AnalyticsProps> = ({
 
             {/* --- DEEP DIVE VIEW --- */}
             {activeTab === 'Deep Dive' && (
-                <div className="space-y-6 animate-in fade-in duration-500">
+                <div className="space-y-6">
                     <FilterBar />
 
                     <div className="flex items-center gap-4 mb-4">

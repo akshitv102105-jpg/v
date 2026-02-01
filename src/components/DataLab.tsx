@@ -147,7 +147,7 @@ const DataLab: React.FC<DataLabProps> = ({ trades = [], onSeekWisdom, onDeleteTr
     };
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-12 h-screen flex flex-col">
+        <div className="space-y-6 pb-12 h-screen flex flex-col">
             <div className="shrink-0 flex items-center justify-between">
                 <div>
                     <div className="flex items-center gap-3 mb-1">

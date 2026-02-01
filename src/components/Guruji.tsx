@@ -445,7 +445,7 @@ ${recentTrades}
     };
 
     return (
-        <div className="guruji-container animate-in fade-in duration-500">
+        <div className="guruji-container">
             {/* Sidebar */}
             <aside className="guruji-sidebar">
                 <style>

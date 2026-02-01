@@ -118,7 +118,7 @@ const HabitTracker: React.FC<HabitTrackerProps> = ({ habits, completions, onTogg
 
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-8">
+        <div className="space-y-6 pb-8">
 
             {/* 1. Header & Controls */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
