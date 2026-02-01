@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { supabase } from '../supabase/client';
 import { UserProfile } from '../types';
 import { useAuth } from '../contexts/AuthContext';
@@ -9,8 +9,22 @@ export const useProfile = () => {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [loading, setLoading] = useState(true);
 
+    // Track the last user ID we fetched for to prevent duplicate fetches
+    const lastFetchedUserId = useRef<string | null>(null);
+
     const fetchProfile = async () => {
-        if (!user) return;
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+
+        // Skip if we've already fetched for this user
+        if (lastFetchedUserId.current === user.id) {
+            return;
+        }
+
+        lastFetchedUserId.current = user.id;
+
         try {
             const { data, error } = await supabase
                 .from('profiles')

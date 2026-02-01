@@ -527,7 +527,10 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   const { user, loading } = useAuth();
 
+  console.log('[APP DEBUG] App render:', { loading, hasUser: !!user, userId: user?.id });
+
   if (loading) {
+    console.log('[APP DEBUG] Showing loading spinner');
     return (
       <div className="flex h-screen items-center justify-center bg-[#0B0E14] text-indigo-500">
         <i className="fa-solid fa-circle-notch fa-spin text-4xl"></i>
@@ -536,9 +539,11 @@ const App: React.FC = () => {
   }
 
   if (!user) {
+    console.log('[APP DEBUG] No user, showing Auth');
     return <Auth />;
   }
 
+  console.log('[APP DEBUG] User authenticated, showing AppContent');
   return (
     <UndoProvider>
       <AppContent />
@@ -547,3 +552,4 @@ const App: React.FC = () => {
 };
 
 export default App;
+

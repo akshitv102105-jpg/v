@@ -374,7 +374,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const activeStrategyObj = selectedExitTrade ? strategies.find(s => s.name === selectedExitTrade.strategy) : null;
 
     return (
-        <div className="space-y-6 animate-in fade-in duration-500 pb-12">
+        <div className="space-y-6 pb-12">
 
             {/* --- GREETING & STATUS BANNER --- */}
             <GreetingBanner nickname={nickname} rank={rank} userProfile={userProfile} />
@@ -1097,7 +1097,7 @@ const ActivePositionCard: React.FC<{
                     </div>
                     <div>
                         <div className="flex items-baseline gap-2">
-                            <h3 className="text-3xl font-black text-white tracking-wide leading-none animate-pulse">{trade.symbol}</h3>
+                            <h3 className="text-3xl font-black text-white tracking-wide leading-none group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-white group-hover:to-slate-400 transition-all duration-500">{trade.symbol}</h3>
                             <span className="text-[10px] font-bold text-slate-500 bg-slate-800/50 border border-slate-700 px-1.5 py-0.5 rounded">PERP</span>
                         </div>
                         <div className={`flex items-center gap-3 text-sm font-bold mt-1 ${sideColor}`}>

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import './GreetingBanner.css';
 
 interface GreetingBannerProps {
     nickname: string;
@@ -60,7 +61,6 @@ const QUOTES = [
 ];
 
 const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userProfile }) => {
-    // ... existing logic ...
     const getGreeting = () => {
         const hour = new Date().getHours();
         if (hour >= 5 && hour < 12) return "Good Morning";
@@ -91,41 +91,41 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
         return () => clearInterval(interval);
     }, []);
 
-    // Aggressive Rank Styles
+    // Aggressive Rank Styles - Made more stable
     const getRankStyles = (rankName: string) => {
         switch (rankName.toUpperCase()) {
             case 'GOD':
                 return {
-                    text: 'font-[900] italic tracking-tighter animate-celestial-pulse scale-150',
-                    aura: 'opacity-60 blur-[100px] scale-[3]',
-                    glow: 'shadow-[0_0_50px_rgba(168,85,247,0.8)]',
+                    text: 'font-[900] italic tracking-tighter animate-celestial-pulse',
+                    aura: 'opacity-40 blur-[40px]',
+                    glow: 'shadow-[0_0_30px_rgba(168,85,247,0.5)]',
                     ring: 'border-purple-500'
                 };
             case 'ELITE':
                 return {
-                    text: 'font-black tracking-widest animate-glitch scale-125',
-                    aura: 'opacity-50 blur-[80px] scale-[2.5]',
-                    glow: 'shadow-[0_0_40px_rgba(244,63,94,0.6)]',
+                    text: 'font-black tracking-widest animate-glitch-subtle',
+                    aura: 'opacity-30 blur-[30px]',
+                    glow: 'shadow-[0_0_20px_rgba(244,63,94,0.4)]',
                     ring: 'animate-pulse border-rose-500'
                 };
             case 'WARRIOR':
                 return {
-                    text: 'font-extrabold uppercase animate-slash scale-110',
-                    aura: 'opacity-40 blur-[60px] scale-[2]',
-                    glow: 'shadow-[0_0_30px_rgba(251,191,36,0.5)]',
+                    text: 'font-extrabold uppercase animate-slash-subtle',
+                    aura: 'opacity-20 blur-[20px]',
+                    glow: 'shadow-[0_0_15px_rgba(251,191,36,0.3)]',
                     ring: 'animate-ping-slow border-amber-400'
                 };
             case 'CONSISTENT':
                 return {
-                    text: 'font-bold animate-float',
-                    aura: 'opacity-30 blur-[50px] scale-150',
-                    glow: 'shadow-[0_0_20px_rgba(52,211,153,0.4)]',
+                    text: 'font-bold animate-banner-float',
+                    aura: 'opacity-20 blur-[15px]',
+                    glow: 'shadow-[0_0_10px_rgba(52,211,153,0.3)]',
                     ring: 'animate-pulse border-emerald-400'
                 };
             default:
                 return {
                     text: 'font-medium',
-                    aura: 'opacity-20 blur-[40px]',
+                    aura: 'opacity-10 blur-[10px]',
                     glow: '',
                     ring: 'border-slate-500'
                 };
@@ -136,71 +136,6 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
 
     return (
         <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 mb-12 relative">
-            <style>{`
-                @keyframes celestial-pulse {
-                    0%, 100% { transform: scale(1.5); text-shadow: 0 0 20px rgba(168,85,247,0.8), 0 0 40px rgba(168,85,247,0.4); }
-                    50% { transform: scale(1.6); text-shadow: 0 0 40px rgba(168,85,247,1), 0 0 80px rgba(168,85,247,0.6); }
-                }
-                @keyframes glitch {
-                    0% { transform: scale(1.25) translate(0); }
-                    20% { transform: scale(1.25) translate(-2px, 2px); }
-                    40% { transform: scale(1.25) translate(-2px, -2px); }
-                    60% { transform: scale(1.25) translate(2px, 2px); }
-                    80% { transform: scale(1.25) translate(2px, -2px); }
-                    100% { transform: scale(1.25) translate(0); }
-                }
-                @keyframes slash {
-                    0% { opacity: 0.5; transform: skewX(-20deg) scale(1.1); }
-                    50% { opacity: 1; transform: skewX(0deg) scale(1.2); }
-                    100% { opacity: 0.5; transform: skewX(20deg) scale(1.1); }
-                }
-                @keyframes float {
-                    0%, 100% { transform: translateY(0); }
-                    50% { transform: translateY(-5px); }
-                }
-                @keyframes spin-slow { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-                @keyframes spin-fast { from { transform: rotate(0deg); } to { transform: rotate(720deg); } }
-                @keyframes vortex {
-                    from { transform: rotate(0deg) scale(1); }
-                    to { transform: rotate(360deg) scale(1.1); }
-                }
-                @keyframes drift {
-                    0%, 100% { transform: translate(0, 0); }
-                    50% { transform: translate(-10px, 10px); }
-                }
-                .animate-celestial-pulse { animation: celestial-pulse 2s infinite ease-in-out; }
-                .animate-glitch { animation: glitch 0.2s infinite; }
-                .animate-slash { animation: slash 1s infinite alternate; }
-                .animate-float { animation: float 3s infinite ease-in-out; }
-                .animate-spin-slow { animation: spin-slow 15s linear infinite; }
-                .animate-spin-fast { animation: spin-fast 1s linear infinite; }
-                .animate-vortex { animation: vortex 20s linear infinite; }
-                .animate-drift { animation: drift 5s ease-in-out infinite; }
-                .animate-ping-slow { animation: ping 3s cubic-bezier(0, 0, 0.2, 1) infinite; }
-                
-                .galaxy-bg {
-                    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.2) 0%, transparent 70%);
-                }
-                .vortex-layer {
-                    position: absolute;
-                    inset: -40px;
-                    background-image: conic-gradient(from 0deg, transparent, rgba(168, 85, 247, 0.3), transparent 30%, rgba(139, 92, 246, 0.4), transparent);
-                    filter: blur(20px);
-                    border-radius: 50%;
-                }
-                .vortex-particles {
-                    position: absolute;
-                    inset: -20px;
-                    background-image: radial-gradient(1px 1px at 20% 30%, #fff 50%, transparent),
-                                      radial-gradient(1px 1px at 70% 60%, #fff 50%, transparent),
-                                      radial-gradient(1.5px 1.5px at 40% 80%, rgba(167, 139, 250, 0.8) 50%, transparent),
-                                      radial-gradient(1px 1px at 10% 10%, #fff 50%, transparent),
-                                      radial-gradient(2px 2px at 90% 90%, rgba(168, 85, 247, 0.6) 50%, transparent);
-                    background-size: 80px 80px;
-                    opacity: 0.4;
-                }
-            `}</style>
-
             <div className="flex-1 relative z-10">
                 <div className="flex items-center gap-2 mb-2">
                     <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.5)] animate-pulse"></div>
@@ -211,10 +146,10 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
                     {greeting}, <span className="text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 via-purple-400 to-cyan-400">{nickname}</span>
                 </h1>
 
-                {rank && (
+                {rank && styles && (
                     <div className="mb-4">
                         <span className="text-sm font-bold text-slate-500 uppercase tracking-widest mr-2">Trader's Ranking:</span>
-                        <span className={`text-lg font-black italic tracking-wider ${rank.color} drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]`}>{rank.name}</span>
+                        <span className={`text-lg transition-all duration-300 ${styles.text} ${rank.color} drop-shadow-[0_0_10px_rgba(255,255,255,0.1)]`}>{rank.name}</span>
                     </div>
                 )}
 
@@ -234,20 +169,18 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
                     {/* GOD Rank Galaxy Vortex Special Effect */}
                     {rank.name === 'GOD' && (
                         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                            <div className="absolute w-[280px] h-[280px] galaxy-bg animate-pulse"></div>
-                            <div className="vortex-layer animate-vortex"></div>
-                            <div className="vortex-layer animate-vortex opacity-60" style={{ animationDuration: '10s', animationDirection: 'reverse', inset: '-60px' }}></div>
-                            <div className="vortex-layer animate-spin-slow opacity-30" style={{ animationDuration: '40s', inset: '-20px', backgroundImage: 'conic-gradient(from 180deg, transparent, rgba(168, 85, 247, 0.4), transparent)' }}></div>
-                            <div className="vortex-particles animate-drift"></div>
-                            <div className="vortex-particles animate-vortex opacity-30" style={{ animationDuration: '30s' }}></div>
+                            <div className="absolute w-[220px] h-[220px] galaxy-bg animate-pulse"></div>
+                            <div className="vortex-layer animate-vortex-slow"></div>
+                            <div className="vortex-layer animate-vortex-slow opacity-40" style={{ animationDuration: '15s', animationDirection: 'reverse', inset: '-40px' }}></div>
+                            <div className="vortex-particles animate-banner-drift"></div>
                         </div>
                     )}
 
                     {/* Concentric Aura Layers for others */}
                     {rank.name !== 'GOD' && (
                         <>
-                            <div className={`absolute w-32 h-32 rounded-full blur-[40px] opacity-40 animate-pulse ${rank.color.replace('text-', 'bg-')}`}></div>
-                            <div className={`absolute w-48 h-48 rounded-full blur-[80px] opacity-20 ${rank.color.replace('text-', 'bg-')}`}></div>
+                            <div className={`absolute w-32 h-32 rounded-full blur-[30px] opacity-30 animate-pulse ${rank.color.replace('text-', 'bg-')}`}></div>
+                            <div className={`absolute w-40 h-40 rounded-full blur-[60px] opacity-10 ${rank.color.replace('text-', 'bg-')}`}></div>
                         </>
                     )}
 
@@ -256,23 +189,19 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
                         {/* Dynamic Swirling Border for GOD */}
                         {rank.name === 'GOD' && (
                             <>
-                                <div className="absolute -inset-4 rounded-full opacity-30 blur-xl bg-purple-600 animate-pulse"></div>
-                                <div className="absolute -inset-2 rounded-full border border-purple-400/30 animate-spin-slow"></div>
-                                <div className="absolute -inset-0.5 rounded-full border-2 border-purple-400/60 shadow-[0_0_15px_rgba(168,85,247,0.8)] z-10"></div>
+                                <div className="absolute -inset-2 rounded-full opacity-20 blur-lg bg-purple-600 animate-pulse"></div>
+                                <div className="absolute -inset-1 rounded-full border border-purple-400/20 animate-vortex-slow"></div>
                             </>
                         )}
 
-                        <div className={`absolute -inset-4 rounded-full opacity-40 blur-md animate-spin-slow ${rank.color.replace('text-', 'bg-gradient-to-tr from-transparent to-')}`}></div>
-                        <div className={`relative h-28 w-28 rounded-full border-4 bg-slate-950 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-110 shadow-2xl ${styles.glow} ${styles.ring}`}>
+                        <div className={`relative h-24 w-24 rounded-full border-4 bg-slate-950 flex items-center justify-center overflow-hidden transition-all duration-500 group-hover:scale-105 shadow-xl ${styles.glow} ${styles.ring}`}>
                             {userProfile?.avatarImage ? (
                                 <img src={userProfile.avatarImage} alt="Rank" className="h-full w-full object-cover" />
                             ) : (
-                                <i className={`fa-solid fa-user-astronaut text-5xl ${rank.color}`}></i>
+                                <i className={`fa-solid fa-user-astronaut text-4xl ${rank.color}`}></i>
                             )}
                         </div>
                     </div>
-
-                    {/* Rank Indicator Removed as per request */}
                 </div>
             )}
         </div>
@@ -280,3 +209,4 @@ const GreetingBanner: React.FC<GreetingBannerProps> = ({ nickname, rank, userPro
 };
 
 export default GreetingBanner;
+

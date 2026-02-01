@@ -1,0 +1,135 @@
+/* Rank Specific Keyframes */
+@keyframes celestial-pulse {
+
+    0%,
+    100% {
+        transform: scale(1.1);
+        text-shadow: 0 0 15px rgba(168, 85, 247, 0.6), 0 0 30px rgba(168, 85, 247, 0.3);
+    }
+
+    50% {
+        transform: scale(1.15);
+        text-shadow: 0 0 30px rgba(168, 85, 247, 0.8), 0 0 60px rgba(168, 85, 247, 0.5);
+    }
+}
+
+@keyframes glitch-subtle {
+    0% {
+        transform: scale(1.05) translate(0);
+    }
+
+    33% {
+        transform: scale(1.05) translate(-1px, 1px);
+    }
+
+    66% {
+        transform: scale(1.05) translate(1px, -1px);
+    }
+
+    100% {
+        transform: scale(1.05) translate(0);
+    }
+}
+
+@keyframes slash-subtle {
+    0% {
+        opacity: 0.7;
+        transform: skewX(-10deg) scale(1.05);
+    }
+
+    50% {
+        opacity: 1;
+        transform: skewX(0deg) scale(1.1);
+    }
+
+    100% {
+        opacity: 0.7;
+        transform: skewX(10deg) scale(1.05);
+    }
+}
+
+@keyframes banner-float {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+@keyframes vortex-slow {
+    from {
+        transform: rotate(0deg) scale(1);
+    }
+
+    to {
+        transform: rotate(360deg) scale(1.05);
+    }
+}
+
+@keyframes banner-drift {
+
+    0%,
+    100% {
+        transform: translate(0, 0);
+    }
+
+    50% {
+        transform: translate(-5px, 5px);
+    }
+}
+
+/* Base Animation Classes */
+.animate-celestial-pulse {
+    animation: celestial-pulse 3s infinite ease-in-out;
+}
+
+.animate-glitch-subtle {
+    animation: glitch-subtle 0.5s infinite;
+}
+
+.animate-slash-subtle {
+    animation: slash-subtle 2s infinite alternate;
+}
+
+.animate-banner-float {
+    animation: banner-float 4s infinite ease-in-out;
+}
+
+.animate-vortex-slow {
+    animation: vortex-slow 25s linear infinite;
+}
+
+.animate-banner-drift {
+    animation: banner-drift 6s ease-in-out infinite;
+}
+
+.animate-ping-slow {
+    animation: ping 4s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+/* Background / Overlay Styles */
+.galaxy-bg {
+    background: radial-gradient(circle at center, rgba(168, 85, 247, 0.15) 0%, transparent 70%);
+}
+
+.vortex-layer {
+    position: absolute;
+    inset: -30px;
+    background-image: conic-gradient(from 0deg, transparent, rgba(168, 85, 247, 0.2), transparent 30%, rgba(139, 92, 246, 0.3), transparent);
+    filter: blur(15px);
+    border-radius: 50%;
+}
+
+.vortex-particles {
+    position: absolute;
+    inset: -15px;
+    background-image: radial-gradient(1px 1px at 20% 30%, #fff 40%, transparent),
+        radial-gradient(1px 1px at 70% 60%, #fff 40%, transparent),
+        radial-gradient(1.5px 1.5px at 40% 80%, rgba(167, 139, 250, 0.6) 50%, transparent);
+    background-size: 60px 60px;
+    opacity: 0.3;
+}
