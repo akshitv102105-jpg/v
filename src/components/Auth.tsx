@@ -1,62 +1,172 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
+import { GodVortex } from './GodVortex';
+import './Auth.css';
 
 const Auth: React.FC = () => {
-    const { signIn } = useAuth();
+    const { signIn, signUp } = useAuth();
+    const [isLogin, setIsLogin] = useState(true);
     const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [confirmPassword, setConfirmPassword] = useState('');
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
     const [message, setMessage] = useState('');
+    const [shake, setShake] = useState(false);
 
-    const handleLogin = async (e: React.FormEvent) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setError('');
         setMessage('');
+
+        if (!isLogin && password !== confirmPassword) {
+            setError("Passwords do not match, novice!");
+            setShake(true);
+            setLoading(false);
+            return;
+        }
+
         try {
-            await signIn(email);
-            setMessage('Check your email for the login link!');
-        } catch (error: any) {
-            setMessage(error.message || 'An error occurred');
+            if (isLogin) {
+                await signIn(email, password);
+            } else {
+                await signUp(email, password, {
+                    nickname: email.split('@')[0],
+                    level: 1,
+                    xp: 0,
+                    hp: 100,
+                    mana: 100
+                });
+                setMessage('The path is open. Check your email to confirm your initiation!');
+            }
+        } catch (err: any) {
+            setError(err.message || 'An error occurred in the vortex');
+            setShake(true);
         } finally {
             setLoading(false);
         }
     };
 
+    useEffect(() => {
+        if (shake) {
+            const timer = setTimeout(() => setShake(false), 500);
+            return () => clearTimeout(timer);
+        }
+    }, [shake]);
+
     return (
-        <div className="flex flex-col items-center justify-center min-h-screen bg-[#0B0E14] text-slate-300">
-            <div className="w-full max-w-md p-8 rounded-2xl bg-[#151A25] border border-slate-800 shadow-2xl">
-                <div className="text-center mb-8">
-                    <h1 className="text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-400 to-cyan-400 mb-2">VYUHA</h1>
-                    <p className="text-slate-500 text-sm">Quantified Trading Journal</p>
+        <div className="auth-portal-container">
+            {/* Background Atmosphere */}
+            <div className="portal-atmosphere">
+                <div className="glow-orb orb-1"></div>
+                <div className="glow-orb orb-2"></div>
+                <div className="grid-overlay"></div>
+            </div>
+
+            <div className={`auth-card-container ${shake ? 'animate-shake' : ''}`}>
+                <div className="auth-card-vortex">
+                    <GodVortex size="lg" auraColor={isLogin ? "gold" : "cyan"} intensity="high">
+                        <img src="/guru_real.png" alt="Guruji" className="vortex-character-img" />
+                    </GodVortex>
                 </div>
 
-                <form onSubmit={handleLogin} className="space-y-6">
-                    <div>
-                        <label className="block text-xs font-bold uppercase text-slate-500 mb-2">Email Address</label>
-                        <input
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            className="w-full bg-[#0B0E14] border border-slate-800 rounded-lg px-4 py-3 text-white focus:border-indigo-500 outline-none transition-colors"
-                            placeholder="trader@example.com"
-                        />
+                <div className="auth-glass-card">
+                    <div className="card-header">
+                        <h1 className="portal-title">{isLogin ? 'RESUME SADHANA' : 'BEGIN INITIATION'}</h1>
+                        <p className="portal-subtitle">
+                            {isLogin ? 'Return to your path of discipline' : 'Step into the world of quantified trading'}
+                        </p>
                     </div>
 
-                    <button
-                        type="submit"
-                        disabled={loading}
-                        className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-lg transition-all shadow-lg hover:shadow-indigo-500/20 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        {loading ? <i className="fa-solid fa-spinner fa-spin"></i> : 'Send Magic Link'}
-                    </button>
+                    <div className="auth-tabs">
+                        <button
+                            className={`auth-tab ${isLogin ? 'active' : ''}`}
+                            onClick={() => { setIsLogin(true); setError(''); setMessage(''); }}
+                        >
+                            LOGIN
+                        </button>
+                        <button
+                            className={`auth-tab ${!isLogin ? 'active' : ''}`}
+                            onClick={() => { setIsLogin(false); setError(''); setMessage(''); }}
+                        >
+                            SIGN UP
+                        </button>
+                        <div className="tab-indicator" style={{ left: isLogin ? '0%' : '50%' }}></div>
+                    </div>
 
-                    {message && (
-                        <div className={`p-4 rounded-lg text-sm text-center ${message.includes('error') ? 'bg-rose-500/10 text-rose-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
-                            {message}
+                    <form onSubmit={handleSubmit} className="auth-form">
+                        <div className="input-group">
+                            <label>TRADER EMAIL</label>
+                            <div className="input-wrapper">
+                                <i className="fa-solid fa-envelope"></i>
+                                <input
+                                    type="email"
+                                    required
+                                    placeholder="Enter your address..."
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                />
+                            </div>
                         </div>
-                    )}
-                </form>
+
+                        <div className="input-group">
+                            <label>SECRET KEY (PASSWORD)</label>
+                            <div className="input-wrapper">
+                                <i className="fa-solid fa-lock"></i>
+                                <input
+                                    type="password"
+                                    required
+                                    placeholder="••••••••"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                />
+                            </div>
+                        </div>
+
+                        {!isLogin && (
+                            <div className="input-group animate-slide-down">
+                                <label>CONFIRM KEY</label>
+                                <div className="input-wrapper">
+                                    <i className="fa-solid fa-shield-halved"></i>
+                                    <input
+                                        type="password"
+                                        required
+                                        placeholder="••••••••"
+                                        value={confirmPassword}
+                                        onChange={(e) => setConfirmPassword(e.target.value)}
+                                    />
+                                </div>
+                            </div>
+                        )}
+
+                        {error && <div className="portal-error"><i className="fa-solid fa-triangle-exclamation"></i> {error}</div>}
+                        {message && <div className="portal-success"><i className="fa-solid fa-circle-check"></i> {message}</div>}
+
+                        <button type="submit" className="portal-submit-btn" disabled={loading}>
+                            {loading ? (
+                                <span className="flex items-center gap-2">
+                                    <i className="fa-solid fa-spinner fa-spin"></i> PROCESSING...
+                                </span>
+                            ) : (
+                                <span>{isLogin ? 'ENTER THE VORTEX' : 'COMMENCE TRAINING'}</span>
+                            )}
+                            <div className="btn-glow"></div>
+                        </button>
+                    </form>
+
+                    <div className="card-footer">
+                        <p>Need help? <a href="#">Consult the Guru</a></p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Floating Energy Particles */}
+            <div className="energy-particles">
+                {[...Array(12)].map((_, i) => (
+                    <div key={i} className={`particle p-${i + 1}`}></div>
+                ))}
             </div>
         </div>
     );

@@ -7,7 +7,8 @@ interface AuthContextType {
     user: User | null;
     session: Session | null;
     loading: boolean;
-    signIn: (email: string) => Promise<void>;
+    signIn: (email: string, password?: string) => Promise<void>;
+    signUp: (email: string, password: string, metadata?: any) => Promise<void>;
     signOut: () => Promise<void>;
 }
 
@@ -16,6 +17,7 @@ const AuthContext = createContext<AuthContextType>({
     session: null,
     loading: true,
     signIn: async () => { },
+    signUp: async () => { },
     signOut: async () => { },
 });
 
@@ -42,26 +44,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return () => subscription.unsubscribe();
     }, []);
 
-    const signIn = async (email: string) => {
-        const { error } = await supabase.auth.signInWithOtp({
+    const signIn = async (email: string, password?: string) => {
+        if (password) {
+            const { error } = await supabase.auth.signInWithPassword({
+                email,
+                password,
+            });
+            if (error) throw error;
+        } else {
+            const { error } = await supabase.auth.signInWithOtp({
+                email,
+                options: {
+                    emailRedirectTo: window.location.origin,
+                },
+            });
+            if (error) throw error;
+        }
+    };
+
+    const signUp = async (email: string, password: string, metadata?: any) => {
+        const { error } = await supabase.auth.signUp({
             email,
+            password,
             options: {
+                data: metadata,
                 emailRedirectTo: window.location.origin,
-            },
+            }
         });
         if (error) throw error;
     };
-
-    // For development/demo, maybe simple passwordless or just simple anonymous?
-    // Let's stick to Magic Link for now as it's standard Supabase. 
-    // Or maybe insert a dummy user for dev? No, stick to real auth.
 
     const signOut = async () => {
         await supabase.auth.signOut();
     };
 
     return (
-        <AuthContext.Provider value={{ user, session, loading, signIn, signOut }}>
+        <AuthContext.Provider value={{ user, session, loading, signIn, signUp, signOut }}>
             {!loading && children}
         </AuthContext.Provider>
     );
