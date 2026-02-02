@@ -381,7 +381,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             <GreetingBanner nickname={nickname} rank={rank} userProfile={userProfile} />
 
             {/* --- ROW 1: Navigation Cards --- */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                 <NavCard
                     title={isTradingBlocked ? "Trading Locked" : "New Trade"}
                     subtitle={isTradingBlocked ? "Risk limits exceeded" : "Log a new entry instantly"}
@@ -452,7 +452,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             */}
 
             {/* --- ROW 3: Mission Control & Goals --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-[#151A25] p-6 flex flex-col">
                     <div className="flex items-center gap-3 mb-6">
                         <div className="h-8 w-8 rounded-lg bg-indigo-500/10 flex items-center justify-center text-indigo-400"><i className="fa-solid fa-rocket"></i></div>
@@ -605,7 +605,7 @@ const Dashboard: React.FC<DashboardProps> = ({
             </div>
 
             {/* --- ROW 4: Recent Activity & Risk --- */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="w-full grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-[#151A25] p-6">
                     <div className="flex items-center justify-between mb-6">
                         <h2 className="text-lg font-bold text-white">Recent Activity</h2>
