@@ -41,7 +41,7 @@ const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
             </div>
 
             {/* Current Month Challenges */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="w-full grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {thisMonth.map((ach) => (
                     <div
                         key={ach.id}
@@ -90,7 +90,7 @@ const Achievements: React.FC<AchievementsProps> = ({ achievements }) => {
                         <i className="fa-solid fa-medal text-slate-500"></i>
                         Hall of Achievements
                     </h2>
-                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+                    <div className="w-full grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
                         {pastAchievements.map((ach) => (
                             <div key={ach.id} className="group relative bg-[#151A25]/50 border border-slate-800 p-4 rounded-xl text-center hover:border-slate-600 transition-all">
                                 <div className="h-12 w-12 rounded-full bg-slate-800 flex items-center justify-center mx-auto mb-3 border border-slate-700 group-hover:bg-indigo-500/20 group-hover:border-indigo-500/30 transition-all">
