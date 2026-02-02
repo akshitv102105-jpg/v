@@ -140,7 +140,7 @@ const Journal: React.FC<JournalProps> = ({ trades, entries, onSaveEntry, onViewA
             <div className="flex flex-col lg:flex-row gap-6 h-[calc(100vh-200px)] min-h-[600px]">
 
                 {/* Sidebar: History */}
-                <div className="w-full lg:w-80 lg:flex-shrink-0 rounded-2xl border border-slate-800 bg-[#151A25] p-4 flex flex-col overflow-hidden">
+                <div className="w-full lg:w-[360px] lg:flex-shrink-0 rounded-2xl border border-slate-800 bg-[#151A25] p-4 flex flex-col overflow-hidden">
 
                     {/* Streak Card */}
                     {(() => {
