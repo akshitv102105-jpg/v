@@ -439,6 +439,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
             {/* --- LIVE ANIMATION: Risk & Reward --- */}
+            {/* Temporarily disabled due to overlap issues
             <RiskRewardAnimation
                 dailyProfit={riskMetrics.totalTodayPnL}
                 dailyGoal={dailyGoal.targetAmount}
@@ -448,6 +449,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                 maxTrades={riskSettings.maxTradesDay}
                 enabled={enableAnimations}
             />
+            */}
 
             {/* --- ROW 3: Mission Control & Goals --- */}
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
