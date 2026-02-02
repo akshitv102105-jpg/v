@@ -137,7 +137,7 @@ const Journal: React.FC<JournalProps> = ({ trades, entries, onSaveEntry, onViewA
                 </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)] min-h-[600px]">
 
                 {/* Sidebar: History */}
                 <div className="rounded-2xl border border-slate-800 bg-[#151A25] p-4 flex flex-col overflow-hidden">
@@ -280,7 +280,7 @@ const Journal: React.FC<JournalProps> = ({ trades, entries, onSaveEntry, onViewA
                 </div>
 
                 {/* Main Editor */}
-                <div className="lg:col-span-3 rounded-2xl border border-slate-800 bg-[#151A25] flex flex-col overflow-hidden">
+                <div className="lg:col-span-2 rounded-2xl border border-slate-800 bg-[#151A25] flex flex-col overflow-hidden">
 
                     {/* Toolbar */}
                     <div className="flex items-center justify-between border-b border-slate-800 p-6 bg-[#151A25]">
